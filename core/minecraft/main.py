@@ -88,3 +88,25 @@ class MinecraftSounds:
             # 删除自定义目录的音效
             if path.exists(pack.sound(sound_name, sound_path)):
                 delFile(pack.sound(sound_name, sound_path))
+
+    @staticmethod
+    def findOggFiles(base_path):
+        ogg_names = []
+        base_path = os.path.normpath(base_path)  # 规范化路径（处理斜杠/反斜杠）
+        
+        for root, _, files in os.walk(base_path):
+            for file in files:
+                if file.lower().endswith('.ogg'):
+                    # 获取文件的完整路径
+                    full_path = os.path.join(root, file)
+                    
+                    # 计算相对于base_path的相对路径
+                    rel_path = os.path.relpath(full_path, base_path)
+                    
+                    # 去除.ogg后缀并替换路径分隔符
+                    name_no_ext = os.path.splitext(rel_path)[0]
+                    normalized_name = name_no_ext.replace('\\', '/')
+                    
+                    ogg_names.append(normalized_name)
+        
+        return ogg_names

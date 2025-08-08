@@ -78,7 +78,7 @@ class ProjectPath:
 
     # 资源包 minecraft sounds 目录下的音效文件的配置文件
     def soundsJson(self):
-        return path.join(self.sounds(), "sounds.json")
+        return path.join(self.minecraft(), "sounds.json")
 
 
 

@@ -83,26 +83,32 @@ class Version:
         return 0  # 两者都是测试版或都是正式版
 
     @staticmethod
-    def increment_version(version: str) -> str:
+    def increment_version(version) -> str:
         """
         增加版本号（只增加修订号）
         
         参数:
-            version: 当前版本号（格式为 x.y.z 或 x.y.z-beta）
+            version: 当前版本号（格式为 x.y.z 或 x.y.z-beta），可以是字符串或 Version 对象
             
         返回:
             增加后的版本号（保持相同的版本类型）
         """
+        # 如果是 Version 对象，获取其字符串表示
+        if isinstance(version, Version):
+            version_str = str(version)
+        else:
+            version_str = str(version)
+            
         # 检查是否是测试版
-        is_beta = version.endswith("-beta")
+        is_beta = version_str.endswith("-beta")
         
         # 移除测试版后缀
-        base_version = version.replace("-beta", "") if is_beta else version
+        base_version = version_str.replace("-beta", "") if is_beta else version_str
         
         # 分割版本号
         parts = base_version.split('.')
         if len(parts) != 3:
-            raise ValueError(f"Invalid version format: {version}")
+            raise ValueError(f"Invalid version format: {version_str}")
         
         # 转换为整数
         try:
@@ -110,7 +116,7 @@ class Version:
             minor = int(parts[1])
             patch = int(parts[2])
         except ValueError:
-            raise ValueError(f"Invalid version format: {version}")
+            raise ValueError(f"Invalid version format: {version_str}")
         
         # 增加修订号
         patch += 1
@@ -125,26 +131,32 @@ class Version:
         return new_version
 
     @staticmethod
-    def decrement_version(version: str) -> str:
+    def decrement_version(version) -> str:
         """
         减少版本号（只减少修订号，不会低于0）
         
         参数:
-            version: 当前版本号（格式为 x.y.z 或 x.y.z-beta）
+            version: 当前版本号（格式为 x.y.z 或 x.y.z-beta），可以是字符串或 Version 对象
             
         返回:
             减少后的版本号（保持相同的版本类型）
         """
+        # 如果是 Version 对象，获取其字符串表示
+        if isinstance(version, Version):
+            version_str = str(version)
+        else:
+            version_str = str(version)
+            
         # 检查是否是测试版
-        is_beta = version.endswith("-beta")
+        is_beta = version_str.endswith("-beta")
         
         # 移除测试版后缀
-        base_version = version.replace("-beta", "") if is_beta else version
+        base_version = version_str.replace("-beta", "") if is_beta else version_str
         
         # 分割版本号
         parts = base_version.split('.')
         if len(parts) != 3:
-            raise ValueError(f"Invalid version format: {version}")
+            raise ValueError(f"Invalid version format: {version_str}")
         
         # 转换为整数
         try:
@@ -152,7 +164,7 @@ class Version:
             minor = int(parts[1])
             patch = int(parts[2])
         except ValueError:
-            raise ValueError(f"Invalid version format: {version}")
+            raise ValueError(f"Invalid version format: {version_str}")
         
         # 减少修订号（不低于0）
         patch = max(0, patch - 1)

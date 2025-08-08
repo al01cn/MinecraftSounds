@@ -1,0 +1,20 @@
+{
+    "mcsd.wh": {
+        "category": "record",
+        "sounds": [
+            {
+                "name": "wh",
+                "stream": true
+            }
+        ]
+    },
+    "mcsd.test.cs1": {
+        "category": "record",
+        "sounds": [
+            {
+                "name": "test/cs1",
+                "stream": true
+            }
+        ]
+    }
+}

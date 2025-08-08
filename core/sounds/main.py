@@ -1,4 +1,4 @@
-from minecraft import ProjectPath
+from core.minecraft import *
 import json
 
 
@@ -8,14 +8,17 @@ class Sounds:
     用于管理项目的声音配置文件
     """
 
-    def __init__(self, project_name: str):
+    def __init__(self, project_name: str, sound_main_key: str = "mcsd"):
+
         """
         初始化声音配置管理器
         
         参数:
             project_name (str): 项目名称
+            sound_main_key (str): 声音主键
         """
         self.project_name = project_name
+        self.sound_main_key = sound_main_key
         self.config_path = ProjectPath(self.project_name).soundsJson()
         self.config = {}
 
@@ -34,6 +37,9 @@ class Sounds:
         return True
 
     def getConfig(self):
+        """获取当前配置"""
+        if path.exists(self.config_path):
+            self.config = self._load_config()
         return self.config
 
 
@@ -49,17 +55,85 @@ class Sounds:
         """
         return self.config.get(sound_name)
 
+    def sound_name_format(self, sound_name: str):
+        """
+        格式化声音名称
+        """
+        return self.sound_main_key + "." + sound_name.replace("/", ".")
+    
+    def sound_path_format(self, sound_path: str):
+        """
+        格式化声音路径
+        """
+        return sound_path.replace("\\", "/")
 
-    def create_sound_entry(self, sound_name):
+    def create_soundsToJson(self):
+        """
+        自动创建声音配置
+        扫描音效文件夹，将所有音效文件包括子文件夹里的音效文件的路径添加到配置文件中
+        音效文件的路径格式为：音效文件夹路径/音效文件名
+        注意：
+            1. 音效文件夹路径为项目的sounds文件夹
+            2. 音效文件名必须为.ogg格式
+            3. 不可包含特殊字符
+            4. 音效名称和子目录名称不可重复
+
+        例如：
+            音效文件夹路径：C:/Users/Administrator/Desktop/MinecraftSounds/sounds
+            音效文件名：test.ogg
+            音效文件路径：C:/Users/Administrator/Desktop/MinecraftSounds/sounds/test.ogg
+            返回: test
+            音效文件路径：C:/Users/Administrator/Desktop/MinecraftSounds/sounds/test/test.ogg
+            返回: test/test
+
+            以此类推，子目录下的音效文件路径为：子目录名/音效文件名
+            返回: 子目录名/音效文件名
+
+        返回值：
+            {
+                "mcsd.test": {
+                    "category": "record",
+                    "sounds": [{
+                        "name": "test",
+                        "stream": True
+                    }]
+                },
+                "mcsd.test.test": {
+                    "category": "record",
+                    "sounds": [{
+                        "name": "test/test",
+                        "stream": True
+                    }]
+                }
+            }
+        """
+        self.config = {}
+        data = MinecraftSounds.findOggFiles(ProjectPath(self.project_name).sounds())
+        for da in data:
+            self.config[self.sound_name_format(da)] = self.create_sound_entry(da)
+        self.save_config()
+        return self.config
+
+    def create_sound_entry(self, sound_path):
+        """
+        创建新的声音条目
+        
+        参数:
+            sound_name (str): 声音名称
+        
+        返回:
+            dict: 新的声音配置条目
+        """
+
         return {
             "category": "record",
             "sounds": [{
-                "name": sound_name,
+                "name": sound_path,
                 "stream": True
             }]
         }
 
-    def append_sound_data(self, new_sound_name):
+    def append_sound_data(self, new_sound_name, sound_path = None):
         """
         将新的声音条目追加到现有数据中
         
@@ -71,7 +145,9 @@ class Sounds:
             dict: 更新后的完整数据
         """
         # 创建新条目并追加
-        self.config[new_sound_name] = self.create_sound_entry(new_sound_name)
+        self.config[self.sound_name_format(new_sound_name)] = self.create_sound_entry(new_sound_name, sound_path)
+        # 保存配置
+        self.save_config()
         return self.config
     
     def remove_sound_data(self, sound_name):
@@ -87,34 +163,10 @@ class Sounds:
         """
         if sound_name in self.config:
             del self.config[sound_name]
+            # 保存配置
+            self.save_config()
         return self.config
 
     def list_sounds(self):
         """列出所有声音名称"""
         return list(self.config.keys())
-
-    def rename_sound(self, old_name, new_name, auto_save=False):
-        """
-        重命名声音条目
-        
-        参数:
-            old_name (str): 原声音名称
-            new_name (str): 新声音名称
-            auto_save (bool): 是否自动保存到文件
-            
-        返回:
-            bool: 操作是否成功
-        """
-        if old_name not in self.config or new_name in self.config:
-            return False  # 原声音不存在或新名称已存在
-        
-        # 复制并更新配置
-        self.config[new_name] = self.config[old_name]
-        del self.config[old_name]
-        
-        # 更新内部声音名称引用
-        self.config[new_name]["sounds"][0]["name"] = new_name
-        
-        if auto_save:
-            self.save_config()
-        return True
