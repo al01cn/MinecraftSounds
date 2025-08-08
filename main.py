@@ -4,10 +4,8 @@ from core.project import *
 from core.sounds import *
 
 if __name__ == '__main__':
-    mcpath = ProjectPath("test")
     test = Project("test")
-    sound = Sounds("test")
-    if not path.exists(mcpath.project_path):
+    if not path.exists(test.path):
         test.create()
     else:
         test.autoCreateSound()

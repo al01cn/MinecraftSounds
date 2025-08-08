@@ -8,12 +8,13 @@ class Project:
         self.name = name # 项目名称
         self.path = path.join(project_path, self.name) # 项目路径
         self.pj_path = ProjectPath(self.name)
-        self.version = Version("0.0.0") # 项目版本
+        self.version = Version("0.0.1") # 项目版本
         self.sounds = {} # 项目中的音效
         self.config = {
             'name': self.name,
             'path': self.path,
             'version': str(self.version),
+            'sounds': self.sounds,
         } # 项目配置
         self.sound = Sounds(self.name)
 
@@ -34,14 +35,33 @@ class Project:
     def build(self):
         # 打包项目
         try:
-            self.getCommand()
+            self.config_version()
+            self.config_sounds()
+            
+            # 第一次构建（初始版本且没有音效）
+            is_first_build = self.version == "0.0.1" and self.sounds == {}
+            if is_first_build:
+                self.autoCreateSound()
+                self.update_config()
+            
+            # 检查音效是否有变化
+            if not is_first_build and self.sounds == self.config_sounds():
+                print("音效未更新，尝试使用autoCreateSound()更新一次")
+                # 尝试更新音效
+                self.autoCreateSound()
+                # 再次检查音效是否有变化
+                if self.sounds == self.config_sounds():
+                    print("更新后音效仍未变化，跳过构建")
+                    return 0
+
             toPack(self.pj_path.src(), self.pj_path.dist(), self.name + "_" + self.version.__str__())
             self.version = Version().increment_version(self.version)
             self.update_config()
-
-            return True
-        except:
-            raise False
+            print(f"构建成功，新版本: {self.version}")
+            return 1
+        except Exception as e:
+            print(f"构建失败: {str(e)}")
+            return -1
 
     def getCommand(self):
         soundkey = self.sound.list_sounds()
@@ -51,7 +71,6 @@ class Project:
     def autoCreateSound(self):
         # 创建项目中的音效目录
         data = self.sound.create_soundsToJson()
-        print(data)
         self.sounds = data
         return data
 
@@ -80,8 +99,8 @@ class Project:
             'name': self.name,
             'path': self.path,
             'version': str(self.version),
+            'sounds': self.sounds,
         })
-            print("更新项目配置文件：" + self.path, "版本：" + str(self.version))
 
         else:
             raise Error('项目配置文件不存在')
@@ -96,16 +115,18 @@ class Project:
     def config_version(self):
         # 获取项目配置文件版本
         if path.exists(path.join(self.path, projectConifgName)):
-            self.version = Version(self.config_content['version'])
-            return self.config_content['version']
+            version = self.config_content()['version']
+            self.version = version
+            return version
         else:
             raise Error('项目配置文件不存在')
 
     def config_sounds(self):
         # 获取项目配置文件中的音效
         if path.exists(path.join(self.path, projectConifgName)):
-            self.sounds = self.config_content['sounds']
-            return self.config_content['sounds']
+            sounds = self.config_content()['sounds']
+            self.sounds = sounds
+            return sounds
         else:
             raise Error('项目配置文件不存在')
 

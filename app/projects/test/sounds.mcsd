@@ -1,5 +1,25 @@
 {
     "name": "test",
     "path": "D:\\Vscode\\python\\MinecraftSounds\\app\\projects\\test",
-    "version": "0.0.1"
+    "version": "0.0.2",
+    "sounds": {
+        "mcsd.wh": {
+            "category": "record",
+            "sounds": [
+                {
+                    "name": "wh",
+                    "stream": true
+                }
+            ]
+        },
+        "mcsd.ts.cs1": {
+            "category": "record",
+            "sounds": [
+                {
+                    "name": "ts/cs1",
+                    "stream": true
+                }
+            ]
+        }
+    }
 }

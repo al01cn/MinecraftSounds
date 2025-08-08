@@ -1,7 +1,7 @@
 import re
 
 class Version:
-    def __init__(self, version: str = "0.0.0", beta: bool = False):
+    def __init__(self, version: str = "0.0.1", beta: bool = False):
         self.version = version
         self.beta = beta
 

@@ -17,6 +17,9 @@ class MinecraftSounds:
         if not path.exists(pack.dist()): # 输出目录
             createFolder(pack.dist())
 
+        if not path.exists(pack.cache()): # 缓存目录
+            createFolder(pack.cache())
+
 
         if not path.exists(pack.assets()): # 资源根目录
             createFolder(pack.assets())

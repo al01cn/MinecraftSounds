@@ -3,6 +3,7 @@ from utils import *
 
 # 创建音频包项目，项目结构为：
 # 项目名
+# ├── cache (缓存目录, 必须)
 # ├── src (源文件目录, 必须)
 # │   ├── pack.mcmeta (音频包元数据, 必须)
 # │   ├── pack.png (图标, 16x16-256x256, 可选)
@@ -39,6 +40,10 @@ class ProjectPath:
     # 项目输出目录
     def dist(self):
         return path.join(self.project_path, "dist")
+
+    # 项目缓存目录
+    def cache(self):
+        return path.join(self.project_path, "cache")
     
     # 项目输出的音频包
     def distPack(self):

@@ -8,11 +8,11 @@
             }
         ]
     },
-    "mcsd.test.cs1": {
+    "mcsd.ts.cs1": {
         "category": "record",
         "sounds": [
             {
-                "name": "test/cs1",
+                "name": "ts/cs1",
                 "stream": true
             }
         ]
