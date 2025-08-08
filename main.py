@@ -1,12 +1,21 @@
-from core.minecraft.main import *
-from core.minecraft.projectPath import *
-from core.project import *
-from core.sounds import *
+import os
+import sys
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
+
+from gui.windows import App
 
 if __name__ == '__main__':
-    test = Project("test")
-    if not path.exists(test.path):
-        test.create()
-    else:
-        test.autoCreateSound()
-        test.build()
+    QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+
+    # setTheme(Theme.DARK)
+
+    app = QApplication(sys.argv)
+    # w = StickerFactoryApp()  # 直接创建类的实例
+    # w.show()
+    main = App()
+    main.show()
+    sys.exit(app.exec_())

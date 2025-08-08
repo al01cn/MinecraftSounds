@@ -4,21 +4,27 @@ from core.minecraft import *
 from utils import *
 
 class Project:
-    def __init__(self, name):
+    def __init__(self, name, description = "", icon_path = "", pack_format = 1, sound_main_key = "mcsd"):
         self.name = name # 项目名称
+        self.description = description # 项目描述
+        self.icon_path = icon_path # 项目图标路径
+        self.pack_format = pack_format # 项目资源包ID
+        self.sound_main_key = sound_main_key # 音效主键
         self.path = path.join(project_path, self.name) # 项目路径
         self.pj_path = ProjectPath(self.name)
         self.version = Version("0.0.1") # 项目版本
         self.sounds = {} # 项目中的音效
         self.config = {
             'name': self.name,
+            "description": self.description,
+            "icon_path": self.icon_path,
+            "pack_format": self.pack_format,
+            "sound_main_key": self.sound_main_key,
             'path': self.path,
             'version': str(self.version),
             'sounds': self.sounds,
         } # 项目配置
-        self.sound = Sounds(self.name)
-
-
+        self.sound = Sounds(self.name, self.sound_main_key)
 
     def create(self):
         # 创建项目根目录
@@ -26,7 +32,7 @@ class Project:
             print("创建项目：" + self.path)
             createFolder(self.path)
             self.create_config()
-            MinecraftSounds.create(project_name=self.name, icon_path=path.join(root_path, "pack.png"))
+            MinecraftSounds.create(project_name=self.name, description=self.description, pack_format=self.pack_format, icon_path=self.icon_path)
             self.sound._load_config()
             self.sounds = self.sound.getConfig()
         else:
@@ -63,6 +69,39 @@ class Project:
             print(f"构建失败: {str(e)}")
             return -1
 
+    def icon(self, icon_path: str):
+        MinecraftSounds.replaceIcon(project_name=self.name, icon_path=icon_path)
+
+    def getDescription(self):
+        return self.description
+    
+    def getPackFormat(self):
+        return self.pack_format
+
+    def getVersion(self):
+        return self.version
+    
+    def getIconPath(self):
+        return self.icon_path
+    
+    def getName(self):
+        return self.name
+
+    def getPath(self):
+        return self.path
+
+    def setDescription(self, description: str):
+        self.description = description
+        self.config["description"] = description
+
+    def setPackFormat(self, pack_format: int):
+        self.pack_format = pack_format
+        self.config["pack_format"] = pack_format
+
+    def setVersion(self, version: str):
+        self.version = version
+        self.config["version"] = version
+
     def getCommand(self):
         soundkey = self.sound.list_sounds()
         print(soundkey)
@@ -97,6 +136,9 @@ class Project:
         if path.exists(path.join(self.path, projectConifgName)):
             updateJsonFile(path.join(self.path, projectConifgName), {
             'name': self.name,
+            "description": self.description,
+            "icon_path": self.icon_path,
+            "pack_format": self.pack_format,
             'path': self.path,
             'version': str(self.version),
             'sounds': self.sounds,
