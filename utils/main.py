@@ -8,8 +8,9 @@ from PyQt5.QtGui import QIcon
 root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # 项目根文件夹路径
 app_path = os.path.join(root_path, 'app') # 应用文件夹路径
 ffmpeg_path = os.path.join(app_path, 'ffmpeg', 'ffmpeg.exe') # ffmpeg.exe文件路径
-assets_path = os.path.join(root_path, 'assets') # 资源文件夹路径
+assets_path = os.path.join(app_path, 'assets') # 资源文件夹路径
 icons_path = os.path.join(assets_path, 'icons') # 图标文件夹路径
+font_path = os.path.join(assets_path, 'fonts') # 字体文件夹路径
 project_path = os.path.join(app_path, 'projects') # 项目文件夹路径
 config_path = os.path.join(app_path, 'config.json') # 配置文件路径
 

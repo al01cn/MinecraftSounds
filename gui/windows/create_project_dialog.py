@@ -1,14 +1,16 @@
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout,
                              QLineEdit, QTextEdit, QPushButton, QFileDialog, QComboBox)
 from PIL import Image
 import json
 import os
-from utils import mcver_path, getVersionToPack_format
+import sys
+from utils import mcver_path, getVersionToPack_format, GetIconSvg
 from gui.ui import MinecraftFrame, MinecraftTitleLabel, MinecraftLabel, apply_minecraft_style
 from gui.ui.button import MinecraftPixelButton
 from gui.ui.minecraft_dialog import MinecraftMessageBox, MinecraftMessageBoxResult
+from gui.components import IconLabel
 
 # 定义通用的Minecraft风格输入控件样式
 MINECRAFT_INPUT_STYLE = """
@@ -86,79 +88,99 @@ class CreateProjectDialog(QDialog):
         self.formLayout.setContentsMargins(15, 15, 15, 15)
         self.formLayout.setSpacing(10)
         
+        # 辅助函数：创建标签
+        def create_label(label_text):
+            label = MinecraftLabel(label_text)
+            label.setFixedWidth(100)  # 设置固定宽度
+            label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)  # 右对齐，垂直居中
+            return label
+        
+        # 创建表单网格布局
+        self.formGridLayout = QGridLayout()
+        self.formGridLayout.setVerticalSpacing(10)  # 设置垂直间距
+        self.formGridLayout.setHorizontalSpacing(10)  # 设置水平间距
+        self.formGridLayout.setColumnStretch(0, 0)  # 第一列不拉伸
+        self.formGridLayout.setColumnStretch(1, 1)  # 第二列拉伸
+        
         # 音乐包名称
         self.nameContainer = QVBoxLayout()
-        self.nameLayout = QHBoxLayout()
-        self.nameLabel = MinecraftLabel("音乐包名称")
+        
+        # 创建标签
+        self.nameLabel = create_label("音乐包名称")
+        
         self.nameEdit = QLineEdit()
         self.nameEdit.setMaxLength(10)  # 限制最多10个字
         self.nameEdit.setStyleSheet(f"QLineEdit {{{MINECRAFT_INPUT_STYLE}}} QLineEdit:focus {{{MINECRAFT_INPUT_FOCUS_STYLE}}}")
-        self.nameLayout.addWidget(self.nameLabel)
-        self.nameLayout.addWidget(self.nameEdit)
-        self.nameContainer.addLayout(self.nameLayout)
+        
+        # 添加到网格布局的第一行
+        self.formGridLayout.addWidget(self.nameLabel, 0, 0, Qt.AlignRight)  # 行0，列0
+        self.formGridLayout.addWidget(self.nameEdit, 0, 1)  # 行0，列1
         
         # 音乐包名称错误提示
         self.nameErrorLabel = QLabel()
         self.nameErrorLabel.setStyleSheet("color: #FF5555; font-size: 10px; margin-top: 2px;")
         self.nameErrorLabel.setVisible(False)
-        self.nameContainer.addWidget(self.nameErrorLabel)
-        self.formLayout.addLayout(self.nameContainer)
+        self.formGridLayout.addWidget(self.nameErrorLabel, 1, 1)  # 行1，列1
         
         # 音乐包简介
-        self.descLayout = QHBoxLayout()
-        self.descLabel = MinecraftLabel("音乐包简介")
+        # 创建标签
+        self.descLabel = create_label("音乐包简介")
+        
         self.descEdit = QLineEdit()
         self.descEdit.setMaxLength(10)  # 限制最多10个字
         self.descEdit.setStyleSheet(f"QLineEdit {{{MINECRAFT_INPUT_STYLE}}} QLineEdit:focus {{{MINECRAFT_INPUT_FOCUS_STYLE}}}")
-        self.descLayout.addWidget(self.descLabel)
-        self.descLayout.addWidget(self.descEdit)
-        self.formLayout.addLayout(self.descLayout)
+        self.formGridLayout.addWidget(self.descLabel, 2, 0, Qt.AlignRight)  # 行2，列0
+        self.formGridLayout.addWidget(self.descEdit, 2, 1)  # 行2，列1
         
         # 音乐包图标
-        self.iconLayout = QHBoxLayout()
-        self.iconLabel = MinecraftLabel("音乐包图标")
+        # 创建标签
+        self.iconLabel = create_label("音乐包图标")
+        
         self.iconPathLabel = MinecraftLabel("未选择图标")
         self.iconButton = MinecraftPixelButton("选择图标", button_type="brown")
         self.iconButton.clicked.connect(self.selectIcon)
-        self.iconLayout.addWidget(self.iconLabel)
-        self.iconLayout.addWidget(self.iconPathLabel, 1)  # 1表示拉伸因子
-        self.iconLayout.addWidget(self.iconButton)
-        self.formLayout.addLayout(self.iconLayout)
+        
+        # 创建一个水平布局来放置图标路径标签和按钮
+        self.iconButtonLayout = QHBoxLayout()
+        self.iconButtonLayout.addWidget(self.iconPathLabel, 1)  # 1表示拉伸因子
+        self.iconButtonLayout.addWidget(self.iconButton)
+        
+        self.formGridLayout.addWidget(self.iconLabel, 3, 0, Qt.AlignRight)  # 行3，列0
+        self.formGridLayout.addLayout(self.iconButtonLayout, 3, 1)  # 行3，列1
         
         # 游戏版本
-        self.versionContainer = QVBoxLayout()
-        self.versionLayout = QHBoxLayout()
-        self.versionLabel = MinecraftLabel("游戏版本")
+        # 创建标签
+        self.versionLabel = create_label("游戏版本")
+        
         self.versionCombo = QComboBox()
         self.versionCombo.setStyleSheet(MINECRAFT_COMBOBOX_STYLE)
         self.loadVersions()  # 加载版本信息
-        self.versionLayout.addWidget(self.versionLabel)
-        self.versionLayout.addWidget(self.versionCombo)
-        self.versionContainer.addLayout(self.versionLayout)
+        self.formGridLayout.addWidget(self.versionLabel, 4, 0, Qt.AlignRight)  # 行4，列0
+        self.formGridLayout.addWidget(self.versionCombo, 4, 1)  # 行4，列1
         
         # 游戏版本错误提示
         self.versionErrorLabel = QLabel()
         self.versionErrorLabel.setStyleSheet("color: #FF5555; font-size: 10px; margin-top: 2px;")
         self.versionErrorLabel.setVisible(False)
-        self.versionContainer.addWidget(self.versionErrorLabel)
-        self.formLayout.addLayout(self.versionContainer)
+        self.formGridLayout.addWidget(self.versionErrorLabel, 5, 1)  # 行5，列1
         
         # 主键
-        self.keyContainer = QVBoxLayout()
-        self.keyLayout = QHBoxLayout()
-        self.keyLabel = MinecraftLabel("主键")
+        # 创建标签
+        self.keyLabel = create_label("主键")
+        
         self.keyEdit = QLineEdit("mcsd")  # 默认值为mcsd
         self.keyEdit.setStyleSheet(f"QLineEdit {{{MINECRAFT_INPUT_STYLE}}} QLineEdit:focus {{{MINECRAFT_INPUT_FOCUS_STYLE}}}")
-        self.keyLayout.addWidget(self.keyLabel)
-        self.keyLayout.addWidget(self.keyEdit)
-        self.keyContainer.addLayout(self.keyLayout)
+        self.formGridLayout.addWidget(self.keyLabel, 6, 0, Qt.AlignRight)  # 行6，列0
+        self.formGridLayout.addWidget(self.keyEdit, 6, 1)  # 行6，列1
         
         # 主键错误提示
         self.keyErrorLabel = QLabel()
         self.keyErrorLabel.setStyleSheet("color: #FF5555; font-size: 10px; margin-top: 2px;")
         self.keyErrorLabel.setVisible(False)
-        self.keyContainer.addWidget(self.keyErrorLabel)
-        self.formLayout.addLayout(self.keyContainer)
+        self.formGridLayout.addWidget(self.keyErrorLabel, 7, 1)  # 行7，列1
+        
+        # 将网格布局添加到表单布局中
+        self.formLayout.addLayout(self.formGridLayout)
         
         # 添加表单框架到主布局
         self.mainLayout.addWidget(self.formFrame)

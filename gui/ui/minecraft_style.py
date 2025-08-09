@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap, QPainter, QBrush, QLinearGradient
+from PyQt5.QtGui import QFont, QColor, QPalette, QPixmap, QPainter, QBrush, QLinearGradient, QFontDatabase
 from PyQt5.QtWidgets import QStyleFactory, QPushButton, QLabel, QWidget, QFrame
+import os
 
 # 我的世界风格的颜色
 MC_COLORS = {
@@ -16,28 +17,73 @@ MC_COLORS = {
     'text_yellow': '#FFFF55',  # 文本黄色
 }
 
-# 我的世界风格的字体
-MC_FONT = "Minecraft"
+# 我的世界风格的字体路径
+ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+FONTS_PATH = os.path.join(ROOT_PATH, 'app', 'assets', 'fonts')
+MC_REGULAR_FONT = os.path.join(FONTS_PATH, 'MinecraftRegular-Bmg3.otf')
+MC_BOLD_FONT = os.path.join(FONTS_PATH, 'MinecraftBold-nMK1.otf')
+MC_ITALIC_FONT = os.path.join(FONTS_PATH, 'MinecraftItalic-R8Mo.otf')
+MC_BOLD_ITALIC_FONT = os.path.join(FONTS_PATH, 'MinecraftBoldItalic-1y1e.otf')
+
+# 字体ID
+MC_FONT_REGULAR_ID = "Minecraft Regular"
+MC_FONT_BOLD_ID = "Minecraft Bold"
+MC_FONT_ITALIC_ID = "Minecraft Italic"
+MC_FONT_BOLD_ITALIC_ID = "Minecraft Bold Italic"
 
 # 备用字体列表
 FALLBACK_FONTS = ["Courier New", "Consolas", "Monospace"]
 
 
-def get_minecraft_font(size=12, bold=False):
-    """获取我的世界风格的字体"""
-    # 尝试使用Minecraft字体，如果不可用则使用备用字体
-    font = QFont(MC_FONT, size)
+# 初始化字体数据库
+def init_minecraft_fonts():
+    """初始化并加载Minecraft字体到字体数据库"""
+    font_db = QFontDatabase()
     
-    # 如果Minecraft字体不可用，尝试备用字体
+    # 检查并加载常规字体
+    if os.path.exists(MC_REGULAR_FONT):
+        font_db.addApplicationFont(MC_REGULAR_FONT)
+    
+    # 检查并加载粗体字体
+    if os.path.exists(MC_BOLD_FONT):
+        font_db.addApplicationFont(MC_BOLD_FONT)
+    
+    # 检查并加载斜体字体
+    if os.path.exists(MC_ITALIC_FONT):
+        font_db.addApplicationFont(MC_ITALIC_FONT)
+    
+    # 检查并加载粗斜体字体
+    if os.path.exists(MC_BOLD_ITALIC_FONT):
+        font_db.addApplicationFont(MC_BOLD_ITALIC_FONT)
+
+# 字体初始化函数将在应用程序启动后调用
+# 不要在这里调用 init_minecraft_fonts()
+
+def get_minecraft_font(size=12, bold=False, italic=False):
+    """获取我的世界风格的字体"""
+    font = QFont()
+    
+    # 根据粗体和斜体选择合适的字体
+    if bold and italic:
+        font = QFont(MC_FONT_BOLD_ITALIC_ID, size)
+    elif bold:
+        font = QFont(MC_FONT_BOLD_ID, size)
+    elif italic:
+        font = QFont(MC_FONT_ITALIC_ID, size)
+    else:
+        font = QFont(MC_FONT_REGULAR_ID, size)
+    
+    # 如果字体不可用，尝试备用字体
     if not font.exactMatch():
         for fallback in FALLBACK_FONTS:
             font = QFont(fallback, size)
             if font.exactMatch():
                 break
-    
-    # 设置字体粗细
-    if bold:
-        font.setBold(True)
+        # 手动设置粗体和斜体
+        if bold:
+            font.setBold(True)
+        if italic:
+            font.setItalic(True)
     
     # 设置像素化渲染（模拟我的世界像素风格）
     font.setStyleStrategy(QFont.NoAntialias)
@@ -51,7 +97,7 @@ class MinecraftButton(QPushButton):
     def __init__(self, text, parent=None, primary=True):
         super().__init__(text, parent)
         self.primary = primary  # 主按钮或次要按钮
-        self.setFont(get_minecraft_font(12, True))
+        self.setFont(get_minecraft_font(12, bold=True))
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(40)
         
@@ -117,7 +163,7 @@ class MinecraftSettingsButton(QPushButton):
     
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
-        self.setFont(get_minecraft_font(10))
+        self.setFont(get_minecraft_font(10, bold=False, italic=False))
         self.setCursor(Qt.PointingHandCursor)
         
         # 设置样式
@@ -184,7 +230,7 @@ class MinecraftTitleLabel(QLabel):
     
     def __init__(self, text, parent=None):
         super().__init__(text, parent)
-        self.setFont(get_minecraft_font(18, True))
+        self.setFont(get_minecraft_font(18, bold=True))
         self.setStyleSheet("""
             QLabel {
                 color: #FFFF55; /* 黄色文本 */
@@ -197,9 +243,9 @@ class MinecraftTitleLabel(QLabel):
 class MinecraftLabel(QLabel):
     """我的世界风格的普通标签"""
     
-    def __init__(self, text, parent=None):
+    def __init__(self, text, parent=None, bold=False, italic=False):
         super().__init__(text, parent)
-        self.setFont(get_minecraft_font(12))
+        self.setFont(get_minecraft_font(12, bold=bold, italic=italic))
         self.setStyleSheet("""
             QLabel {
                 color: white;
