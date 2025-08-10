@@ -64,8 +64,8 @@ class CreateProjectDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("创建新项目")
-        self.setMinimumSize(500, 400)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setFixedSize(500, 400)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint & ~Qt.WindowMaximizeButtonHint & ~Qt.WindowMinimizeButtonHint)
 
         self.pack_format = 1
         self.key_error = False  # 添加主键错误标志
@@ -321,7 +321,6 @@ class CreateProjectDialog(QDialog):
         
         if result == MinecraftMessageBoxResult.ok:
             super().accept()
-            print("创建项目")
         # 如果用户选择取消，则不关闭对话框
     
     def getProjectInfo(self):

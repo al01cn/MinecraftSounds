@@ -44,6 +44,18 @@ class ProjectPath:
     # 项目缓存目录
     def cache(self):
         return path.join(self.project_path, "cache")
+
+    # 项目配置文件
+    def soundsMcsd(self):
+        return path.join(self.src(), "sounds.mcsd")
+    
+    # 项目路径
+    def getProjectPath(self):
+        return self.project_path
+    
+    # 项目名称
+    def getProjectName(self):
+        return self.project_name
     
     # 项目输出的音频包
     def distPack(self):

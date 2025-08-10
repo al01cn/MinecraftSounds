@@ -123,7 +123,6 @@ class Project:
         MinecraftSounds.delSound(project_name=self.name, sound_name=sound_name)
         self.sound.remove_sound_data(sound_name)
 
-
     def create_config(self):
         # 创建项目配置文件
         if not path.exists(path.join(self.path, projectConifgName)):

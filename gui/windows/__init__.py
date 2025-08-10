@@ -1,2 +1,2 @@
 from .main import *
-from .editor_window import EditorWindow
+from .create_project_dialog import CreateProjectDialog

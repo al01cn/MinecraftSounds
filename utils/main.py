@@ -4,6 +4,7 @@ from os import path
 from uu import Error
 import json
 from PyQt5.QtGui import QIcon
+from pypinyin import pinyin, STYLE_NORMAL
 
 root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # 项目根文件夹路径
 app_path = os.path.join(root_path, 'app') # 应用文件夹路径
@@ -369,10 +370,25 @@ def delFolder(src):
 
 def delFile(src):
     # 删除文件
-    if path.exists(src):
-        os.remove(src)
-    else:
-        raise Error('文件不存在')
+    try:
+        if path.exists(src):
+            # 尝试移除只读属性
+            os.chmod(src, 0o777)
+            os.remove(src)
+        else:
+            raise Error('文件不存在')
+    except PermissionError:
+        # 如果普通删除失败,尝试使用系统命令强制删除
+        import subprocess
+        try:
+            if os.name == 'nt':  # Windows系统
+                subprocess.run(['del', '/f', '/q', src], shell=True, check=True)
+            else:  # Unix/Linux系统
+                subprocess.run(['rm', '-f', src], check=True)
+        except subprocess.CalledProcessError:
+            raise Error('文件删除失败:权限不足或文件被占用')
+    except Exception as e:
+        raise Error(f'文件删除失败:{str(e)}')
 
 def delJsonFile(src):
     # 删除json文件
@@ -386,7 +402,9 @@ def copyFile(src, dst):
     # 复制文件到指定文件夹
     if not path.exists(dst):
         os.makedirs(dst)
-    shutil.copy(src, dst)
+    
+    # 使用copy2保留文件的元数据信息
+    shutil.copy2(src, dst)
 
 
 def deleteFolder(src):
@@ -455,3 +473,83 @@ def getProject(name):
     else:
         raise Error('项目不存在')
 
+
+def toPinyin(text: str):
+    # 转换为拼音
+    return pinyin(text, style=STYLE_NORMAL, heteronym=True)
+
+def toPinyinFirst(text: str):
+    # 转换为拼音首字母
+    return ''.join([i[0] for i in toPinyin(text)])
+
+def toPinyinFirstUpper(text: str):
+    # 转换为拼音首字母大写
+    return ''.join([i[0].upper() for i in toPinyin(text)])
+
+def toPinyinFirstLower(text: str):
+    # 转换为拼音首字母小写
+    return ''.join([i[0].lower() for i in toPinyin(text)])
+
+def cnTextSplit(text: str) -> str:
+    """传入中文，把每个字进行分割，随机取三个字
+    
+    Args:
+        text (str): 输入的中文文本
+        
+    Returns:
+        str: 如果输入长度>=3,返回随机3个字;否则返回原文本
+    """
+    import random
+    import re
+    
+    # 检查输入是否为空或非字符串类型
+    if not text or not isinstance(text, str):
+        return ""
+    
+    # 优化字符过滤,使用set提高查找效率
+    invalid_chars = {'\n', '\r', ' ', '\t'}  # 添加制表符到过滤集合
+    
+    # 移除标点符号和特殊字符
+    text = re.sub(r'[^\u4e00-\u9fa5a-zA-Z0-9]', '', text)
+    
+    # 使用生成器表达式优化内存使用
+    chars = [char for char in text if char not in invalid_chars and char.strip()]
+    
+    # 优化长度判断和随机选择
+    char_count = len(chars)
+    if char_count >= 3:
+        # 使用切片优化random.sample性能
+        if char_count > 10:  # 对于较长的文本,先随机选择一个较小的子集
+            chars = random.sample(chars, min(10, char_count))
+        return ''.join(random.sample(chars, 3))
+    
+    # 返回过滤后的原文本
+    return ''.join(chars)
+
+def cnTextToPinyinFirst(text: str) -> str:
+    """传入中文，把每个字进行分割，随机取三个字，然后转成拼音首字母
+    
+    Args:
+        text (str): 输入的中文文本
+        
+    Returns:
+        str: 如果输入长度>=3,返回随机3个字的拼音首字母;否则返回原文本
+    """
+    # 先对中文进行分割获取三个字符
+    chars = cnTextSplit(text)
+    if not chars:
+        return ""
+        
+    # 获取每个字符的拼音列表
+    pinyin_list = toPinyin(chars)
+    
+    # 提取每个拼音的首字母并拼接
+    result = []
+    for py in pinyin_list:
+        if py and py[0]:  # 确保拼音列表不为空
+            # 取拼音首字母并转小写
+            first_letter = py[0][0].lower()
+            result.append(first_letter)
+            
+    # 直接返回拼音首字母拼接结果
+    return ''.join(result)
