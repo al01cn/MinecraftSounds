@@ -1,6 +1,9 @@
+import os
 from os import path
-from utils import *
-from .projectPath import *
+# 避免顶层导入，防止循环引用
+# from utils import delFile, copyFile, createFolder, createJsonFile
+
+from .projectPath import ProjectPath
 
 
 class MinecraftSounds:
@@ -8,6 +11,8 @@ class MinecraftSounds:
 
     @staticmethod
     def create(project_name: str, pack_format: int = 1, description: str = "", icon_path: str = ""):
+        # 延迟导入，避免循环引用
+        from utils import createFolder, createJsonFile, copyFile
 
         pack = ProjectPath(project_name)
 
@@ -19,7 +24,12 @@ class MinecraftSounds:
 
         if not path.exists(pack.cache()): # 缓存目录
             createFolder(pack.cache())
+        
+        if not path.exists(pack.cacheSrc()): # 缓存源文件目录
+            createFolder(pack.cacheSrc())
 
+        if not path.exists(pack.cacheDist()): # 缓存输出目录
+            createFolder(pack.cacheDist())
 
         if not path.exists(pack.assets()): # 资源根目录
             createFolder(pack.assets())
@@ -41,13 +51,20 @@ class MinecraftSounds:
         if icon_path != "" and icon_path != None:
             # 复制图标到指定文件夹
             if path.exists(icon_path):
-                copyFile(icon_path, pack.src())
+                copyFile(icon_path, pack.packIcon())
+        else:
+            # 复制默认图标到指定文件夹
+            if path.exists(pack.defaultIcon()):
+                copyFile(pack.defaultIcon(), pack.packIcon())
 
         if not path.exists(pack.soundsJson()): # 音效映射表
             createJsonFile(pack.soundsJson())
 
     @staticmethod
     def replaceIcon(project_name: str, icon_path: str):
+        # 延迟导入，避免循环引用
+        from utils import delFile, copyFile
+
         pack = ProjectPath(project_name)
 
         if path.exists(pack.packIcon()):
@@ -56,9 +73,11 @@ class MinecraftSounds:
             # 复制图标到指定文件夹
             copyFile(icon_path, pack.packIcon())
 
-
     @staticmethod
     def createSounds(project_name: str, sound_name: str):
+        # 延迟导入，避免循环引用
+        from utils import createFolder
+
         pack = ProjectPath(project_name)
         # 创建音频目录
         if not path.exists(pack.soundf(sound_name)):
@@ -66,6 +85,9 @@ class MinecraftSounds:
 
     @staticmethod
     def addSound(project_name: str, sound_path: str, sound_name: str = None):
+        # 延迟导入，避免循环引用
+        from utils import copyFile
+
         pack = ProjectPath(project_name)
 
         if sound_name == None:
@@ -81,6 +103,9 @@ class MinecraftSounds:
     
     @staticmethod
     def delSound(project_name: str, sound_path: str, sound_name: str = None):
+        # 延迟导入，避免循环引用
+        from utils import delFile
+
         pack = ProjectPath(project_name)
 
         if sound_name == None:
@@ -95,7 +120,7 @@ class MinecraftSounds:
     @staticmethod
     def findOggFiles(base_path):
         ogg_names = []
-        base_path = os.path.normpath(base_path)  # 规范化路径（处理斜杠/反斜杠）
+        base_path = path.normpath(base_path)  # 规范化路径（处理斜杠/反斜杠）
         
         for root, _, files in os.walk(base_path):
             for file in files:
@@ -104,10 +129,10 @@ class MinecraftSounds:
                     full_path = os.path.join(root, file)
                     
                     # 计算相对于base_path的相对路径
-                    rel_path = os.path.relpath(full_path, base_path)
+                    rel_path = path.relpath(full_path, base_path)
                     
                     # 去除.ogg后缀并替换路径分隔符
-                    name_no_ext = os.path.splitext(rel_path)[0]
+                    name_no_ext = path.splitext(rel_path)[0]
                     normalized_name = name_no_ext.replace('\\', '/')
                     
                     ogg_names.append(normalized_name)

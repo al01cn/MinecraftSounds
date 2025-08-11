@@ -1,5 +1,6 @@
 from os import path
-from utils import *
+# 避免顶层导入，防止循环引用
+# from utils import project_path, getDefaultIcon, getFileList
 
 # 创建音频包项目，项目结构为：
 # 项目名
@@ -31,6 +32,8 @@ from utils import *
 class ProjectPath:
     def __init__(self, project_name):
         self.project_name = project_name # 项目名称
+        # 延迟导入，避免循环引用
+        from utils import project_path
         self.project_path = path.join(project_path, self.project_name) # 项目路径
 
     # 项目根目录
@@ -45,9 +48,28 @@ class ProjectPath:
     def cache(self):
         return path.join(self.project_path, "cache")
 
+    # 项目缓存源文件目录
+    def cacheSrc(self):
+        return path.join(self.cache(), "src")
+
+    # 项目缓存输出目录
+    def cacheDist(self):
+        return path.join(self.cache(), "dist")
+
+    # 项目缓存音效配置文件
+    def cacheConfig(self):
+        return path.join(self.cache(), "sounds.json")
+
+    # 项目缓存源文件目录下的自定义音效目录
+    def cacheSrcF(self, name):
+        return path.join(self.cacheSrc(), name)
+
+    def cacheSrcS(self, root, name):
+        return path.join(self.cacheSrcF(root), name)
+
     # 项目配置文件
     def soundsMcsd(self):
-        return path.join(self.src(), "sounds.mcsd")
+        return path.join(self.project_path, "sounds.mcsd")
     
     # 项目路径
     def getProjectPath(self):
@@ -64,7 +86,13 @@ class ProjectPath:
     # 资源包图标
     def packIcon(self):
         return path.join(self.src(), "pack.png")
-    
+
+    # 资源包默认图标
+    def defaultIcon(self):
+        # 延迟导入，避免循环引用
+        from utils import getDefaultIcon
+        return getDefaultIcon()
+
     # 资源包配置文件
     def packMcmeta(self):
         return path.join(self.src(), "pack.mcmeta")
@@ -91,6 +119,8 @@ class ProjectPath:
 
     def soundList(self, root):
         # 获取自定义目录下的所有音效文件
+        # 延迟导入，避免循环引用
+        from utils import getFileList
         return getFileList(self.soundf(root))
 
     # 资源包 minecraft sounds 目录下的音效文件的配置文件

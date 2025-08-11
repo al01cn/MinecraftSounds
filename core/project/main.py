@@ -1,10 +1,17 @@
 from os import path
-from core.sounds import *
-from core.minecraft import *
-from utils import *
+import os
+from core.sounds import Sounds, MinecraftSounds
+from core.minecraft import ProjectPath
+# 避免顶层导入，防止循环引用
+# from utils import createFolder, projectExists, getJsonFileContent, project_path, toPack, projectConifgName, createJsonFile, updateJsonFile
+
+from utils.version import Version
+from uu import Error
+from .config import ProjectConfig
 
 class Project:
     def __init__(self, name, description = "", icon_path = "", pack_format = 1, sound_main_key = "mcsd"):
+        from utils import project_path
         self.name = name # 项目名称
         self.description = description # 项目描述
         self.icon_path = icon_path # 项目图标路径
@@ -26,8 +33,22 @@ class Project:
         } # 项目配置
         self.sound = Sounds(self.name, self.sound_main_key)
 
+    @staticmethod
+    def load(project_path):
+        # 加载项目配置
+        # 延迟导入，避免循环引用
+        pj_config = ProjectConfig.load_config(project_path)
+        project = Project(pj_config.name, pj_config.description, pj_config.icon_path, pj_config.pack_format, pj_config.sound_main_key)
+        project.version = Version(pj_config.version)
+        project.sounds = pj_config.sounds
+        project.sound_main_key = pj_config.sound_main_key # 音效主键
+        project.sound = Sounds(pj_config.name, pj_config.sound_main_key)
+        return project
+
     def create(self):
         # 创建项目根目录
+        # 延迟导入，避免循环引用
+        from utils import projectExists, createFolder
         if not projectExists(self.name):
             print("创建项目：" + self.path)
             createFolder(self.path)
@@ -40,7 +61,12 @@ class Project:
     
     def build(self):
         # 打包项目
+        from utils import toPack, createFolder
         try:
+            # 首先检查项目目录权限
+            if not os.access(self.path, os.R_OK | os.W_OK | os.X_OK):
+                raise Error(f'项目目录无权限: {self.path}')
+                
             self.config_version()
             self.config_sounds()
             
@@ -60,7 +86,20 @@ class Project:
                     print("更新后音效仍未变化，跳过构建")
                     return 0
 
+            # 确保dist目录存在并有足够权限
+            dist_path = self.pj_path.dist()
+            if not os.path.exists(dist_path):
+                try:
+                    createFolder(dist_path)
+                except Exception as e:
+                    raise Error(f'创建dist目录失败: {str(e)}')
+            
+            # 检查dist目录权限
+            if not os.access(dist_path, os.R_OK | os.W_OK | os.X_OK):
+                raise Error(f'dist目录无权限: {dist_path}')
+
             toPack(self.pj_path.src(), self.pj_path.dist(), self.name + "_" + self.version.__str__())
+            self.cmdToFile()
             self.version = Version().increment_version(self.version)
             self.update_config()
             print(f"构建成功，新版本: {self.version}")
@@ -107,6 +146,15 @@ class Project:
         print(soundkey)
         return soundkey
 
+    def cmdToFile(self):
+        # 生成命令文件
+        cmd_path = path.join(self.pj_path.dist(), self.name + "_" + str(self.version)+".txt")
+        with open(cmd_path, 'w', encoding='utf-8') as f:
+            for key in self.sound.list_sounds():
+                f.write(f"1.7.10及以下版本：\n/playsound {key} @a ~ ~ ~ 10000\n1.8及以上版本：\n/playsound {key} record @a ~ ~ ~ 10000\n")
+
+        return cmd_path
+
     def autoCreateSound(self):
         # 创建项目中的音效目录
         data = self.sound.create_soundsToJson()
@@ -124,6 +172,9 @@ class Project:
         self.sound.remove_sound_data(sound_name)
 
     def create_config(self):
+        # 延迟导入，避免循环引用
+        from utils import createJsonFile, projectConifgName
+
         # 创建项目配置文件
         if not path.exists(path.join(self.path, projectConifgName)):
             createJsonFile(path.join(self.path, projectConifgName), self.config)
@@ -131,6 +182,9 @@ class Project:
             raise Error('项目配置文件已存在')
 
     def update_config(self):
+        # 延迟导入，避免循环引用
+        from utils import updateJsonFile, projectConifgName
+
         # 更新项目配置文件
         if path.exists(path.join(self.path, projectConifgName)):
             updateJsonFile(path.join(self.path, projectConifgName), {
@@ -138,38 +192,48 @@ class Project:
             "description": self.description,
             "icon_path": self.icon_path,
             "pack_format": self.pack_format,
+            "sound_main_key": self.sound_main_key,
             'path': self.path,
             'version': str(self.version),
             'sounds': self.sounds,
         })
 
         else:
-            raise Error('项目配置文件不存在')
+            raise Error('项目配置文件不存在a')
 
     def config_content(self):
+        # 延迟导入，避免循环引用
+        from utils import getJsonFileContent, projectConifgName
+
         # 获取项目配置文件内容
         if path.exists(path.join(self.path, projectConifgName)):
             return getJsonFileContent(path.join(self.path, projectConifgName))
         else:
-            raise Error('项目配置文件不存在')
+            raise Error('项目配置文件不存在b')
 
     def config_version(self):
+        # 延迟导入，避免循环引用
+        from utils import projectConifgName
+
         # 获取项目配置文件版本
         if path.exists(path.join(self.path, projectConifgName)):
             version = self.config_content()['version']
             self.version = version
             return version
         else:
-            raise Error('项目配置文件不存在')
+            raise Error('项目配置文件不存在c')
 
     def config_sounds(self):
+        # 延迟导入，避免循环引用
+        from utils import projectConifgName
+
         # 获取项目配置文件中的音效
         if path.exists(path.join(self.path, projectConifgName)):
             sounds = self.config_content()['sounds']
             self.sounds = sounds
             return sounds
         else:
-            raise Error('项目配置文件不存在')
+            raise Error('项目配置文件不存在d')
 
 
 

@@ -5,6 +5,8 @@ from uu import Error
 import json
 from PyQt5.QtGui import QIcon
 from pypinyin import pinyin, STYLE_NORMAL
+# 移除顶层导入，避免循环引用
+# from core.project import Project
 
 root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # 项目根文件夹路径
 app_path = os.path.join(root_path, 'app') # 应用文件夹路径
@@ -17,6 +19,7 @@ config_path = os.path.join(app_path, 'config.json') # 配置文件路径
 
 mcver_path = os.path.join(app_path, 'mc.ver') #  minecraft版本文件路径
 logo_path = os.path.join(assets_path, 'logo.png') # 应用图标文件路径
+defaultIcon_path = os.path.join(assets_path, 'default_pack.png') # 默认图标文件路径
 
 
 exeSuffixName = ".mcsd" # 项目文件后缀名
@@ -36,6 +39,9 @@ def GetIconSvg(iconName: str, icon: bool = True):
 def GetIcon(iconName: str, icon: bool = True):
     iconf = os.path.join(icons_path, f'{iconName}.png')
     return QIcon(iconf) if icon is True else iconf
+
+def getDefaultIcon():
+    return defaultIcon_path
 
 def getMcVersion():
     # 获取minecraft版本
@@ -97,14 +103,14 @@ def download_ffmpeg(target_dir=None):
         target_dir = os.path.dirname(ffmpeg_path)
     
     # 确保目标目录存在
-    os.makedirs(target_dir, exist_ok=True)
+    os.makedirs(target_dir, mode=0o755, exist_ok=True)
     
     # FFmpeg下载链接 (Windows版本)
     download_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
     
     try:
         # 创建临时文件下载ZIP
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_file:
+        with tempfile.NamedTemporaryFile(delete=True, suffix='.zip') as temp_file:
             temp_path = temp_file.name
         
         print(f"正在下载FFmpeg到临时文件: {temp_path}")
@@ -187,7 +193,7 @@ def toOgg(file_path: str, output_path: str, quality="192k", parameters=None, ove
         # 确保输出目录存在
         output_dir = os.path.dirname(output_path)
         if output_dir and not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
+            os.makedirs(output_dir, mode=0o755, exist_ok=True)
     
     # 检查输出文件是否已存在
     if os.path.exists(output_path) and not overwrite:
@@ -324,7 +330,7 @@ def toOgg(file_path: str, output_path: str, quality="192k", parameters=None, ove
 def createFolder(src):
     # 创建文件夹
     if not path.exists(src):
-        os.makedirs(src)
+        os.makedirs(src, mode=0o755)  # 设置读写权限
     else:
         raise Error('文件夹已存在')
 
@@ -332,8 +338,8 @@ def createFile(src):
     # 创建文件
     if not path.exists(src):
         with open(src, 'w', encoding='utf-8') as f:
-
             f.write('')
+        os.chmod(src, 0o644)  # 设置读写权限
     else:
         raise Error('文件已存在')
 
@@ -342,6 +348,7 @@ def createJsonFile(src, content={}):
     if not path.exists(src):
         with open(src, 'w', encoding='utf-8') as f:
             f.write(json.dumps(content, ensure_ascii=False, indent=4))
+        os.chmod(src, 0o644)  # 设置读写权限
     else:
         raise Error('文件已存在')
 
@@ -400,8 +407,11 @@ def delJsonFile(src):
 
 def copyFile(src, dst):
     # 复制文件到指定文件夹
-    if not path.exists(dst):
-        os.makedirs(dst)
+    # 判断目标路径是否包含文件名(有后缀)
+    if not os.path.splitext(dst)[1]:
+        # 没有后缀时创建目标文件夹
+        if not path.exists(dst):
+            os.makedirs(dst, mode=0o755)  # 设置读写权限
     
     # 使用copy2保留文件的元数据信息
     shutil.copy2(src, dst)
@@ -423,20 +433,100 @@ def deleteFile(src):
         raise Error('文件不存在')
 
 def moveFile(src, dst):
+    if not os.path.splitext(dst)[1]:
+        # 没有后缀时创建目标文件夹
+        if not path.exists(dst):
+            os.makedirs(dst, mode=0o755)  # 设置读写权限
     # 移动文件到指定文件夹
-    if path.exists(src):
-        shutil.move(src, dst)
-    else:
-        raise Error('文件不存在')
+    shutil.move(src, dst)
 
 def toPack(src, dst, name='pack'):
 
     # 压缩文件夹，进行打包
     if path.exists(src):
-        # 打包并重命名
-        shutil.make_archive(os.path.join(dst, name), 'zip', src)
+        # 检查源目录权限
+        try:
+            if not os.access(src, os.R_OK | os.X_OK):
+                raise Error(f"源目录 {src} 无读取权限，请检查权限设置")
+        except Exception as e:
+            print(f"源目录权限检查失败: {str(e)}")
+            raise Error(f"源目录 {src} 权限检查失败: {str(e)}")
+        # 确保目标目录存在且可写
+        try:
+            if not os.path.exists(dst):
+                os.makedirs(dst, mode=0o755)  # 设置读写权限
+            # 测试目标目录是否可写
+            test_file = os.path.join(dst, "test_write_permission.tmp")
+            with open(test_file, 'w') as f:
+                f.write("test")
+            os.remove(test_file)
+        except (PermissionError, OSError) as e:
+            print(f"目标目录权限错误: {str(e)}")
+            raise Error(f"目标目录 {dst} 无法访问或写入，请检查权限或关闭占用该目录的程序")
+            
+        # 检查目标文件是否存在
+        target_file = os.path.join(dst, name + '.zip')
+        
+        # 检查目标文件是否被占用
+        if path.exists(target_file):
+            try:
+                # 尝试打开文件，如果能打开，说明文件没有被占用
+                with open(target_file, 'a+b') as f:
+                    pass
+                # 文件存在但未被占用，删除它
+                os.remove(target_file)
+                print(f"已删除现有文件: {target_file}")
+            except PermissionError:
+                # 文件被占用，尝试解除占用
+                try:
+                    import psutil
+                    found_process = False
+                    for proc in psutil.process_iter(['pid', 'name', 'open_files']):
+                        try:
+                            for file in proc.info.get('open_files') or []:
+                                if file.path == target_file:
+                                    print(f"文件被进程 {proc.info['name']} (PID: {proc.info['pid']}) 占用，尝试结束进程...")
+                                    proc.terminate()
+                                    proc.wait(timeout=3)
+                                    found_process = True
+                                    break
+                        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                            pass
+                    
+                    if not found_process:
+                        print(f"未找到占用文件的进程，尝试强制删除文件")
+                    
+                    # 再次尝试删除文件
+                    if path.exists(target_file):
+                        try:
+                            os.remove(target_file)
+                            print(f"已成功删除被占用的文件: {target_file}")
+                        except PermissionError:
+                            # 如果仍然无法删除，尝试使用Windows特定方法
+                            import ctypes
+                            if ctypes.windll.kernel32.MoveFileExW(target_file, None, 4): # MOVEFILE_DELAY_UNTIL_REBOOT
+                                print(f"文件将在系统重启后删除: {target_file}")
+                            else:
+                                raise Error(f"无法删除文件: {target_file}")
+                except ImportError:
+                    print("未安装psutil库，无法检测文件占用进程")
+                    raise Error(f"文件被占用且无法解除: {target_file}，请安装psutil库或手动关闭占用程序")
+                except Exception as e:
+                    print(f"尝试解除文件占用失败: {str(e)}")
+                    raise Error(f"文件被占用且无法解除: {target_file}")
+        
+        try:
+            # 打包并重命名
+            shutil.make_archive(os.path.join(dst, name), 'zip', src)
+            print(f"成功创建压缩包: {os.path.join(dst, name)}.zip")
+        except PermissionError as e:
+            print(f"创建压缩包时权限错误: {str(e)}")
+            raise Error(f"无法创建压缩包，目录 {dst} 可能被占用或没有写入权限")
+        except Exception as e:
+            print(f"创建压缩包时发生错误: {str(e)}")
+            raise Error(f"创建压缩包失败: {str(e)}")
     else:
-        raise Error('文件夹不存在')
+        raise Error(f"源目录不存在: {src}")
 
 def unPack(src, dst):
     # 解压文件到指定文件夹
@@ -466,10 +556,12 @@ def projectExists(name):
     else:
         return False
     
-def getProject(name):
+def getProject(pj_name):
+    from core.project import Project
     # 获取项目
-    if projectExists(name):
-        return Project(name, path.join(project_path, name))
+    if projectExists(pj_name):
+        pj_path = path.join(project_path, pj_name, "sounds" + exeSuffixName)
+        return Project.load(pj_path)
     else:
         raise Error('项目不存在')
 
@@ -490,17 +582,18 @@ def toPinyinFirstLower(text: str):
     # 转换为拼音首字母小写
     return ''.join([i[0].lower() for i in toPinyin(text)])
 
-def cnTextSplit(text: str) -> str:
+def TextSplit(text: str) -> str:
     """传入中文，把每个字进行分割，随机取三个字
     
     Args:
         text (str): 输入的中文文本
         
     Returns:
-        str: 如果输入长度>=3,返回随机3个字;否则返回原文本
+        str: 如果输入长度>=5,返回随机5个字;否则返回原文本
     """
     import random
     import re
+    import random
     
     # 检查输入是否为空或非字符串类型
     if not text or not isinstance(text, str):
@@ -517,7 +610,7 @@ def cnTextSplit(text: str) -> str:
     
     # 优化长度判断和随机选择
     char_count = len(chars)
-    if char_count >= 3:
+    if char_count >= 5:
         # 使用切片优化random.sample性能
         if char_count > 10:  # 对于较长的文本,先随机选择一个较小的子集
             chars = random.sample(chars, min(10, char_count))
@@ -533,10 +626,10 @@ def cnTextToPinyinFirst(text: str) -> str:
         text (str): 输入的中文文本
         
     Returns:
-        str: 如果输入长度>=3,返回随机3个字的拼音首字母;否则返回原文本
+        str: 如果输入长度>=5,返回随机3个字的拼音首字母;否则返回原文本
     """
     # 先对中文进行分割获取三个字符
-    chars = cnTextSplit(text)
+    chars = TextSplit(text)
     if not chars:
         return ""
         
@@ -553,3 +646,25 @@ def cnTextToPinyinFirst(text: str) -> str:
             
     # 直接返回拼音首字母拼接结果
     return ''.join(result)
+
+def enTextToFirst(text: str) -> str:
+    """传入英文，把每个字进行分割，随机取五个字，然后转成字母
+    
+    Args:
+        text (str): 输入的英文文本
+        
+    Returns:
+        str: 如果输入长度>=5,返回随机5个字的英文首字母;否则返回原文本
+    """
+    # 先对英文进行分割获取五个字符
+    chars = TextSplit(text)
+    if not chars:
+        return ""
+        
+    # 如果字符长度大于等于5,随机取5个字符
+    if len(chars) >= 5:
+        selected_chars = ''.join(random.sample(chars, 5))
+        return selected_chars.lower()
+    
+    # 长度小于5时返回原文本小写形式
+    return chars.lower()

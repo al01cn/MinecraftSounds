@@ -1,4 +1,5 @@
 import os
+from uu import Error
 from PyQt5.QtCore import Qt, QUrl, QSize, QEventLoop, QTimer
 from PyQt5.QtGui import QDesktopServices, QGuiApplication, QPixmap
 from PyQt5.QtWidgets import (QApplication, QFrame, QHBoxLayout, QWidget, QLabel, QVBoxLayout,
@@ -9,6 +10,7 @@ from gui.ui.button import MinecraftPixelButton
 from gui.ui.button.minecraft_settings_button import MinecraftSettingsButton
 from gui.components.ffmpeg_status import FFmpegStatusWidget
 from gui.pages import EditorPage
+from gui.pages.export_page import ExportPage
 from gui.ui.minecraft_dialog import MinecraftMessageBox
 from core.project import ProjectConfig, Project
 
@@ -32,10 +34,18 @@ class App(QWidget):
         self.editorPage = EditorPage(self)
         # 连接编辑器页面的返回主页信号
         self.editorPage.backToMainPage.connect(self.backToMainPage)
+        # 连接编辑器页面的切换到导出页面信号
+        self.editorPage.switchToExportPage.connect(self.switchToExportPage)
+        
+        # 创建导出页面
+        self.exportPage = ExportPage(self)
+        # 连接导出页面的返回编辑器页面信号
+        self.exportPage.backToEditorPage.connect(self.backToEditorPage)
         
         # 将页面添加到堆叠小部件
         self.stackedWidget.addWidget(self.mainPage)  # 索引0 - 主页面
         self.stackedWidget.addWidget(self.editorPage)  # 索引1 - 编辑器页面
+        self.stackedWidget.addWidget(self.exportPage)  # 索引2 - 导出页面
         
         # 创建主布局
         self.mainLayout = QVBoxLayout(self)
@@ -162,7 +172,6 @@ class App(QWidget):
         
         if result == dialog.Accepted:
             project_info = dialog.getProjectInfo()
-            print("创建项目信息:", project_info)
             project_name = project_info["name"]
             project_description = project_info["description"]
             project_icon = project_info["icon_path"]
@@ -170,8 +179,16 @@ class App(QWidget):
             sound_main_key = project_info["sound_main_key"]
             
             project = Project(project_name, project_description, project_icon, pack_format, sound_main_key)
-            project.create()
-            
+            try:
+                project.create()
+            except Error as e:
+                MinecraftMessageBox.show_error(
+                    self,
+                    "项目创建失败",
+                    str(e)
+                )
+                return
+
             # 切换到编辑器页面
             self.editorPage.loadProject(project_name)
 
@@ -274,6 +291,18 @@ class App(QWidget):
         self.stackedWidget.setCurrentIndex(0)
         # 恢复窗口标题
         self.setWindowTitle('MinecraftSounds - 我的世界音乐包生成器')
+    
+    def backToEditorPage(self):
+        """返回编辑器页面"""
+        self.stackedWidget.setCurrentIndex(1)
+        self.setWindowTitle(self.editorPage.title_text)
+    
+    def switchToExportPage(self, project_path, audio_files):
+        """切换到导出页面"""
+        # 加载项目到导出页面
+        self.exportPage.loadProject(project_path, audio_files)
+        # 切换到导出页面
+        self.stackedWidget.setCurrentIndex(2)
 
     def initWindow(self):
         # 获取屏幕信息
