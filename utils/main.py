@@ -5,17 +5,46 @@ from uu import Error
 import json
 from PyQt5.QtGui import QIcon
 from pypinyin import pinyin, STYLE_NORMAL
+import time
+import random
 # 移除顶层导入，避免循环引用
 # from core.project import Project
 
-root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # 项目根文件夹路径
+# 项目根文件夹路径
+try:
+    # 正常运行时使用相对路径
+    root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+except NameError:
+    # 打包后使用当前工作目录
+    import sys
+    if getattr(sys, 'frozen', False):
+        root_path = os.path.dirname(sys.executable)
+    else:
+        root_path = os.getcwd()
 app_path = os.path.join(root_path, 'app') # 应用文件夹路径
-ffmpeg_path = os.path.join(app_path, 'ffmpeg', 'ffmpeg.exe') # ffmpeg.exe文件路径
 assets_path = os.path.join(app_path, 'assets') # 资源文件夹路径
 icons_path = os.path.join(assets_path, 'icons') # 图标文件夹路径
 font_path = os.path.join(assets_path, 'fonts') # 字体文件夹路径
 project_path = os.path.join(app_path, 'projects') # 项目文件夹路径
 config_path = os.path.join(app_path, 'config.json') # 配置文件路径
+
+# 从配置文件中读取ffmpeg路径，如果不存在则使用默认路径
+def get_ffmpeg_path():
+    default_ffmpeg_path = os.path.join(app_path, 'ffmpeg', 'ffmpeg.exe')
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                if 'ffmpeg_path' in config:
+                    custom_path = os.path.join(config['ffmpeg_path'], 'ffmpeg.exe')
+                    if os.path.exists(custom_path):
+                        return custom_path
+    except Exception as e:
+        print(f"读取ffmpeg配置失败: {e}")
+    return default_ffmpeg_path
+
+ffmpeg_path = get_ffmpeg_path() # ffmpeg.exe文件路径
+history_path = os.path.join(app_path, 'history.json') # 历史项目记录文件路径
 
 mcver_path = os.path.join(app_path, 'mc.ver') #  minecraft版本文件路径
 logo_path = os.path.join(assets_path, 'logo.png') # 应用图标文件路径
@@ -75,14 +104,19 @@ def check_ffmpeg():
     """
     import shutil
     
+    # 首先检查配置文件中指定的路径
+    if os.path.exists(ffmpeg_path):
+        return True, ffmpeg_path
+    
     # 检查系统环境中是否有ffmpeg
     system_ffmpeg = shutil.which('ffmpeg')
     if system_ffmpeg is not None:
         return True, system_ffmpeg
     
-    # 如果系统环境中没有ffmpeg，检查指定文件夹
-    if os.path.exists(ffmpeg_path):
-        return True, ffmpeg_path
+    # 检查默认路径
+    default_ffmpeg_path = os.path.join(app_path, 'ffmpeg', 'ffmpeg.exe')
+    if os.path.exists(default_ffmpeg_path):
+        return True, default_ffmpeg_path
     
     return False, None
 
@@ -90,7 +124,7 @@ def download_ffmpeg(target_dir=None):
     """下载FFmpeg到指定目录
     
     Args:
-        target_dir (str, optional): 下载目标目录。默认为app/ffmpeg目录。
+        target_dir (str, optional): 下载目标目录。默认为配置文件中指定的目录或app/ffmpeg目录。
     
     Returns:
         bool: 下载是否成功
@@ -100,10 +134,36 @@ def download_ffmpeg(target_dir=None):
     import tempfile
     
     if target_dir is None:
-        target_dir = os.path.dirname(ffmpeg_path)
+        # 尝试从配置文件读取自定义路径
+        try:
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    if 'ffmpeg_path' in config and os.path.exists(config['ffmpeg_path']):
+                        target_dir = config['ffmpeg_path']
+        except Exception as e:
+            print(f"读取ffmpeg配置失败: {e}")
+        
+        # 如果没有自定义路径，使用默认路径
+        if target_dir is None:
+            target_dir = os.path.join(app_path, 'ffmpeg')
     
     # 确保目标目录存在
     os.makedirs(target_dir, mode=0o755, exist_ok=True)
+    
+    # 更新配置文件中的ffmpeg路径
+    try:
+        config = {}
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        
+        config['ffmpeg_path'] = target_dir
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"更新ffmpeg配置失败: {e}")
     
     # FFmpeg下载链接 (Windows版本)
     download_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
@@ -557,13 +617,95 @@ def projectExists(name):
         return False
     
 def getProject(pj_name):
-    from core.project import Project
+    from core.project.main import Project
     # 获取项目
     if projectExists(pj_name):
         pj_path = path.join(project_path, pj_name, "sounds" + exeSuffixName)
         return Project.load(pj_path)
     else:
         raise Error('项目不存在')
+
+def saveProjectHistory(project_name: str):
+    """保存项目到历史记录
+    
+    Args:
+        project_name (str): 项目名称
+    
+    Returns:
+        bool: 是否保存成功
+    """
+    try:
+        # 检查项目是否存在
+        if not projectExists(project_name):
+            return False
+        
+        # 获取项目路径
+        project_path_str = path.join(project_path, project_name)
+        project_file = path.join(project_path_str, "sounds" + exeSuffixName)
+        
+        # 获取当前时间
+        current_time = int(time.time())
+        
+        # 读取历史记录
+        history = getProjectHistory()
+        
+        # 检查项目是否已在历史记录中
+        for item in history:
+            if item.get("name") == project_name:
+                # 更新访问时间
+                item["last_access"] = current_time
+                break
+        else:
+            # 添加新项目到历史记录
+            history.append({
+                "name": project_name,
+                "path": project_file,
+                "last_access": current_time
+            })
+        
+        # 按最后访问时间排序（降序）
+        history.sort(key=lambda x: x.get("last_access", 0), reverse=True)
+        
+        # 限制历史记录数量（保留最近的10个）
+        if len(history) > 10:
+            history = history[:10]
+        
+        # 保存历史记录
+        with open(history_path, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=4)
+        
+        return True
+    except Exception as e:
+        print(f"保存历史记录失败: {str(e)}")
+        return False
+
+def getProjectHistory():
+    """获取项目历史记录
+    
+    Returns:
+        list: 项目历史记录列表，按最后访问时间降序排序
+    """
+    try:
+        if path.exists(history_path):
+            with open(history_path, 'r', encoding='utf-8') as f:
+                history = json.load(f)
+            
+            # 过滤掉不存在的项目
+            valid_history = []
+            for item in history:
+                project_name = item.get("name")
+                if project_name and projectExists(project_name):
+                    valid_history.append(item)
+            
+            return valid_history
+        else:
+            # 如果历史记录文件不存在，创建空文件
+            with open(history_path, 'w', encoding='utf-8') as f:
+                json.dump([], f)
+            return []
+    except Exception as e:
+        print(f"获取历史记录失败: {str(e)}")
+        return []
 
 
 def toPinyin(text: str):

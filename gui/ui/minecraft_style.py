@@ -18,7 +18,16 @@ MC_COLORS = {
 }
 
 # 我的世界风格的字体路径
-ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    # 正常运行时使用相对路径
+    ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+except NameError:
+    # 打包后使用当前工作目录
+    import sys
+    if getattr(sys, 'frozen', False):
+        ROOT_PATH = os.path.dirname(sys.executable)
+    else:
+        ROOT_PATH = os.getcwd()
 FONTS_PATH = os.path.join(ROOT_PATH, 'app', 'assets', 'fonts')
 MC_REGULAR_FONT = os.path.join(FONTS_PATH, 'MinecraftRegular-Bmg3.otf')
 MC_BOLD_FONT = os.path.join(FONTS_PATH, 'MinecraftBold-nMK1.otf')

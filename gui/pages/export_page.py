@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QProgress
 import os
 import shutil
 import time
+import subprocess
 
 from core.minecraft.projectPath import ProjectPath
 from gui.ui import MinecraftFrame, MinecraftLabel, apply_minecraft_style
@@ -609,6 +610,11 @@ class ExportPage(QWidget):
         self.bottomButtonLayout.setContentsMargins(0, 0, 0, 0)
         self.bottomButtonLayout.setSpacing(20)
         
+        # 创建打开文件夹按钮
+        self.openFolderButton = MinecraftPixelButton("打开文件夹", button_type="blue")
+        self.openFolderButton.setMinimumSize(120, 40)
+        self.openFolderButton.clicked.connect(self.onOpenFolder)
+        
         # 创建开始按钮
         self.startButton = MinecraftPixelButton("开始导出", button_type="green")
         self.startButton.setMinimumSize(120, 40)
@@ -621,6 +627,7 @@ class ExportPage(QWidget):
         self.cancelButton.setEnabled(False)
         
         # 添加按钮到底部布局
+        self.bottomButtonLayout.addWidget(self.openFolderButton)
         self.bottomButtonLayout.addStretch(1)
         self.bottomButtonLayout.addWidget(self.startButton)
         self.bottomButtonLayout.addWidget(self.cancelButton)
@@ -788,6 +795,41 @@ class ExportPage(QWidget):
         self.onLogMessage(f"音频文件数量: {len(audio_files)}")
         self.onLogMessage("点击'开始导出'按钮开始导出过程")
         
+    def onOpenFolder(self):
+        """打开文件夹按钮点击事件"""
+        if not self.project_path:
+            MinecraftMessageBox.show_warning(
+                self,
+                "无法打开文件夹",
+                "项目路径为空"
+            )
+            return
+        
+        # 获取dist目录路径
+        dist_path = self.project_path.dist()
+        
+        # 检查目录是否存在
+        if not os.path.exists(dist_path):
+            MinecraftMessageBox.show_warning(
+                self,
+                "无法打开文件夹",
+                f"目录不存在: {dist_path}"
+            )
+            return
+        
+        # 使用系统默认文件管理器打开文件夹
+        try:
+            # 在Windows上使用explorer打开文件夹
+            subprocess.Popen(["explorer", dist_path])
+            self.onLogMessage(f"已打开文件夹: {dist_path}")
+        except Exception as e:
+            MinecraftMessageBox.show_warning(
+                self,
+                "打开文件夹失败",
+                f"无法打开文件夹: {str(e)}"
+            )
+            self.onLogMessage(f"打开文件夹失败: {str(e)}")
+    
     def collectSoundKeys(self):
         """从编辑器页面获取音频文件的soundkey和分类信息"""
         # 获取编辑器页面

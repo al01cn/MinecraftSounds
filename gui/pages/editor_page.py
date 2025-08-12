@@ -281,18 +281,13 @@ class EditorPage(QWidget):
         self.backButton.setMinimumSize(120, 40)
         self.backButton.clicked.connect(self.onBack)
         
-        # 创建重构和导出按钮
-        self.rebuildButton = MinecraftPixelButton("重构", button_type="green")
-        self.rebuildButton.setMinimumSize(120, 40)
-        self.rebuildButton.clicked.connect(self.onRebuild)
-        
+        # 创建导出按钮
         self.exportButton = MinecraftPixelButton("导出", button_type="blue")
         self.exportButton.setMinimumSize(120, 40)
         self.exportButton.clicked.connect(self.onExport)
         
         # 添加按钮到顶部布局
         self.topButtonLayout.addWidget(self.backButton)
-        self.topButtonLayout.addWidget(self.rebuildButton)
         self.topButtonLayout.addStretch(1)
         self.topButtonLayout.addWidget(self.exportButton)
         
@@ -570,22 +565,7 @@ class EditorPage(QWidget):
                 return
 
     
-    def onRebuild(self):
-        """重构按钮点击事件"""
-        if not self.audioFiles:
-            MinecraftMessageBox.show_warning(
-                self,
-                "无法重构",
-                "请先添加音频文件"
-            )
-            return
-        
-        # 这里添加重构逻辑
-        MinecraftMessageBox.show_message(
-            self,
-            "重构成功",
-            f"已成功重构 {len(self.audioFiles)} 个音频文件"
-        )
+    # 重构按钮及其功能已移除
     
     # 导出页面切换信号
     switchToExportPage = pyqtSignal(object, list)
