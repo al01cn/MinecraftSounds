@@ -59,7 +59,7 @@ class AboutPage(QWidget):
         self.aboutLayout.addWidget(self.logoLabel)
         
         # 创建应用名称
-        self.appNameLabel = MinecraftTitleLabel("我的世界音乐包生成器")
+        self.appNameLabel = MinecraftTitleLabel("MinecraftSounds\n我的世界音乐包生成器")
         self.appNameLabel.setAlignment(Qt.AlignCenter)
         self.aboutLayout.addWidget(self.appNameLabel)
         
@@ -69,21 +69,27 @@ class AboutPage(QWidget):
         self.aboutLayout.addWidget(self.versionLabel)
         
         # 创建作者信息
-        self.authorLabel = MinecraftLabel("作者: MinecraftSounds团队")
+        self.authorLabel = MinecraftLabel("作者: 零一狼AL01")
         self.authorLabel.setAlignment(Qt.AlignCenter)
         self.aboutLayout.addWidget(self.authorLabel)
         
         # 创建描述信息
-        self.descriptionLabel = MinecraftLabel("这是一个用于创建我的世界音乐包的工具，可以帮助你轻松地将音频文件转换为我的世界可用的音乐包格式。")
+        self.descriptionLabel = MinecraftLabel("这是一个用于创建我的世界音乐包的工具，可以帮助你轻松地将音频文件转换且打包为我的世界可用的音乐包格式。")
         self.descriptionLabel.setAlignment(Qt.AlignCenter)
         self.descriptionLabel.setWordWrap(True)
         self.aboutLayout.addWidget(self.descriptionLabel)
         
         # 创建GitHub链接按钮
-        self.githubButton = MinecraftPixelButton("访问GitHub", button_type="blue")
+        self.githubButton = MinecraftPixelButton("访问Github", button_type="blue")
         self.githubButton.setMinimumSize(150, 40)
         self.githubButton.clicked.connect(self.onGithub)
         self.aboutLayout.addWidget(self.githubButton, 0, Qt.AlignCenter)
+        
+        # 创建Gitee链接按钮
+        self.giteeButton = MinecraftPixelButton("访问Gitee", button_type="green")
+        self.giteeButton.setMinimumSize(150, 40)
+        self.giteeButton.clicked.connect(self.onGitee)
+        self.aboutLayout.addWidget(self.giteeButton, 0, Qt.AlignCenter)
         
         # 添加关于框架到主布局
         self.mainLayout.addWidget(self.aboutFrame)
@@ -95,4 +101,9 @@ class AboutPage(QWidget):
     def onGithub(self):
         """访问GitHub按钮点击事件"""
         # 这里可以替换为实际的GitHub仓库地址
-        QDesktopServices.openUrl(QUrl("https://github.com/your-username/MinecraftSounds"))
+        QDesktopServices.openUrl(QUrl("https://github.com/al01_cn/minecraft-sounds"))
+
+    def onGitee(self):
+        """访问Gitee按钮点击事件"""
+        # 这里可以替换为实际的GitHub仓库地址
+        QDesktopServices.openUrl(QUrl("https://gitee.com/al01/minecraft-sounds"))

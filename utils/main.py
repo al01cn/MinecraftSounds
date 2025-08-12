@@ -3,6 +3,9 @@ import os
 from os import path
 from uu import Error
 import json
+import urllib.request
+import socket
+import sys
 from PyQt5.QtGui import QIcon
 from pypinyin import pinyin, STYLE_NORMAL
 import time
@@ -27,6 +30,10 @@ icons_path = os.path.join(assets_path, 'icons') # 图标文件夹路径
 font_path = os.path.join(assets_path, 'fonts') # 字体文件夹路径
 project_path = os.path.join(app_path, 'projects') # 项目文件夹路径
 config_path = os.path.join(app_path, 'config.json') # 配置文件路径
+
+ffmpeg_download_urls = [
+    "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
+]
 
 # 从配置文件中读取ffmpeg路径，如果不存在则使用默认路径
 def get_ffmpeg_path():
@@ -96,6 +103,36 @@ def getVersionToPack_format(version: str):
             return ver['pack_format']
     raise Error('版本不存在')
 
+def getGithubProxy():
+    """获取GitHub代理列表
+    
+    Returns:
+        list: GitHub代理列表，每个元素为一个字典，包含url、server、ip、location、latency、speed等信息
+    """
+    try:
+        import requests
+        import json
+        
+        # 设置超时时间（秒）
+        timeout_seconds = 5
+        
+        # 请求GitHub代理API
+        response = requests.get("https://api.akams.cn/github", timeout=timeout_seconds)
+        
+        # 检查响应状态码
+        if response.status_code == 200:
+            data = response.json()
+            
+            # 检查返回的数据格式
+            if data.get("code") == 200 and "data" in data:
+                return data["data"]
+        
+        return []
+    except Exception as e:
+        print(f"获取GitHub代理失败: {str(e)}")
+        return []
+
+
 def check_ffmpeg():
     """检查系统中是否存在FFmpeg
     
@@ -120,96 +157,322 @@ def check_ffmpeg():
     
     return False, None
 
-def download_ffmpeg(target_dir=None):
-    """下载FFmpeg到指定目录
+def get_ffmpeg_download_urls(progress_callback=None):
+    """获取并测试FFmpeg下载链接
     
     Args:
+        progress_callback (function, optional): 进度回调函数，接收下载进度百分比和状态消息。
+    
+    Returns:
+        tuple: (有效链接列表, 链接速度字典, 最快的链接)
+    """
+    import urllib.request
+    import time
+    from urllib.parse import urlparse
+    
+    # 初始化结果变量
+    valid_urls = []
+    url_speeds = {}
+    fastest_url = None
+    
+    # 获取GitHub代理
+    if progress_callback:
+        progress_callback(5, "正在获取GitHub代理...")
+    
+    github_proxies = getGithubProxy()
+    
+    # 准备测试的链接列表
+    test_urls = list(ffmpeg_download_urls)  # 原始链接
+    
+    # 添加代理链接
+    for proxy in github_proxies:
+        proxy_url = proxy.get("url", "")
+        if proxy_url and proxy_url.strip():
+            # 为每个原始链接添加代理
+            for original_url in ffmpeg_download_urls:
+                # 拼接代理链接
+                if proxy_url.endswith("/"):
+                    proxy_url = proxy_url[:-1]  # 移除末尾的斜杠
+                
+                # 确保原始URL是完整的URL
+                if original_url.startswith("http"):
+                    # 构建代理URL
+                    proxy_test_url = f"{proxy_url}/{original_url}"
+                    test_urls.append(proxy_test_url)
+    
+    # 显示测试链接窗口（如果有回调函数）
+    if progress_callback:
+        domains = [urlparse(url).netloc for url in test_urls]
+        progress_callback(10, f"准备测试 {len(test_urls)} 个下载链接...")
+        
+        # 先测试所有域名
+        unique_domains = set(domains)
+        for domain in unique_domains:
+            progress_callback(10, f"开始测试域名: {domain}")
+        
+        # 然后测试所有链接
+        for url in test_urls:
+            progress_callback(10, f"开始测试链接: {url}")
+    
+    # 测试每个链接
+    for url in test_urls:
+        try:
+            domain = urlparse(url).netloc
+            if progress_callback:
+                progress_callback(15, f"正在测试链接: {domain}")
+            
+            # 通知连接有效，开始测速
+            if progress_callback:
+                progress_callback(15, f"链接 {url} 连接有效，开始测速")
+                
+            # 测量下载速度
+            start_time = time.time()
+            
+            # 设置超时时间（秒）
+            timeout_seconds = 5
+            
+            # 只下载前8KB来测试速度
+            req = urllib.request.Request(
+                url,
+                headers={
+                    'User-Agent': 'Mozilla/5.0',
+                    'Range': 'bytes=0-8192'
+                }
+            )
+            
+            # 设置socket超时
+            socket.setdefaulttimeout(timeout_seconds)
+            
+            with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
+                chunk = response.read(8192)
+                if len(chunk) > 0:
+                    # 计算下载速度（KB/s）
+                    download_time = time.time() - start_time
+                    speed = len(chunk) / 1024 / download_time if download_time > 0 else 0
+                    
+                    # 记录有效链接和速度
+                    valid_urls.append(url)
+                    url_speeds[url] = speed
+                    
+                    if progress_callback:
+                        progress_callback(15, f"链接 {url} 测速完成，速度: {speed:.2f} KB/s")
+        except Exception as e:
+            if progress_callback:
+                progress_callback(15, f"链接 {url} 连接失败: {str(e)}")
+    
+    # 选择最快的链接
+    if valid_urls:
+        # 按速度排序所有链接
+        sorted_urls = sorted(url_speeds.items(), key=lambda x: x[1], reverse=True)
+        fastest_url = sorted_urls[0][0]
+        
+        if progress_callback:
+            # 报告最快的链接
+            domain = urlparse(fastest_url).netloc
+            speed = url_speeds[fastest_url]
+            progress_callback(18, f"最快的链接: {fastest_url}，速度: {speed:.2f} KB/s")
+            
+            # 报告所有有效链接的速度（按速度排序）
+            progress_callback(18, f"所有有效链接测速结果:")
+            for url, speed in sorted_urls:
+                progress_callback(18, f"链接 {url} 速度: {speed:.2f} KB/s")
+    
+    return valid_urls, url_speeds, fastest_url
+
+def download_ffmpeg_file(url, target_dir=None, progress_callback=None):
+    """下载FFmpeg文件
+    
+    Args:
+        url (str): 下载链接
         target_dir (str, optional): 下载目标目录。默认为配置文件中指定的目录或app/ffmpeg目录。
+        progress_callback (function, optional): 进度回调函数，接收下载进度百分比和状态消息。
     
     Returns:
         bool: 下载是否成功
     """
-    import urllib.request
-    import zipfile
     import tempfile
+    import zipfile
+    import urllib.request
+    from urllib.parse import urlparse
     
-    if target_dir is None:
-        # 尝试从配置文件读取自定义路径
+    # 设置目标目录
+    if not target_dir:
+        # 使用配置文件中的路径或默认路径
         try:
             if os.path.exists(config_path):
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                    if 'ffmpeg_path' in config and os.path.exists(config['ffmpeg_path']):
+                    if 'ffmpeg_path' in config:
                         target_dir = config['ffmpeg_path']
         except Exception as e:
             print(f"读取ffmpeg配置失败: {e}")
         
-        # 如果没有自定义路径，使用默认路径
-        if target_dir is None:
+        # 如果配置中没有或读取失败，使用默认路径
+        if not target_dir:
             target_dir = os.path.join(app_path, 'ffmpeg')
     
     # 确保目标目录存在
-    os.makedirs(target_dir, mode=0o755, exist_ok=True)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir, mode=0o755, exist_ok=True)
     
-    # 更新配置文件中的ffmpeg路径
-    try:
-        config = {}
-        if os.path.exists(config_path):
-            with open(config_path, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-        
-        config['ffmpeg_path'] = target_dir
-        
-        with open(config_path, 'w', encoding='utf-8') as f:
-            json.dump(config, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        print(f"更新ffmpeg配置失败: {e}")
-    
-    # FFmpeg下载链接 (Windows版本)
-    download_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+    # 创建临时文件用于下载
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+    temp_file.close()
     
     try:
-        # 创建临时文件下载ZIP
-        with tempfile.NamedTemporaryFile(delete=True, suffix='.zip') as temp_file:
-            temp_path = temp_file.name
+        domain = urlparse(url).netloc
+        if progress_callback:
+            progress_callback(20, f"开始从 {domain} 下载FFmpeg...")
         
-        print(f"正在下载FFmpeg到临时文件: {temp_path}")
-        urllib.request.urlretrieve(download_url, temp_path)
+        # 设置下载进度回调
+        def report_progress(block_num, block_size, total_size):
+            if total_size > 0:
+                percent = min(100, int(block_num * block_size * 100 / total_size))
+                if progress_callback:
+                    progress_callback(20 + percent * 0.6, f"正在下载FFmpeg... {percent}%")
         
-        # 解压缩文件
-        print("正在解压FFmpeg...")
-        with zipfile.ZipFile(temp_path, 'r') as zip_ref:
-            # 提取需要的文件 (ffmpeg.exe, ffplay.exe, ffprobe.exe)
+        # 设置超时时间（秒）
+        timeout_seconds = 10
+        
+        # 设置socket超时
+        socket.setdefaulttimeout(timeout_seconds)
+        
+        # 下载文件
+        urllib.request.urlretrieve(
+            url,
+            temp_file.name,
+            reporthook=report_progress
+        )
+        
+        if progress_callback:
+            progress_callback(80, "下载完成，正在解压文件...")
+        
+        # 解压文件
+        with zipfile.ZipFile(temp_file.name, 'r') as zip_ref:
+            # 获取压缩包内的ffmpeg.exe路径
+            ffmpeg_exe_path = None
             for file in zip_ref.namelist():
-                if file.endswith(('ffmpeg.exe', 'ffplay.exe', 'ffprobe.exe')):
-                    # 提取文件名
-                    filename = os.path.basename(file)
-                    # 从zip中读取文件内容
-                    content = zip_ref.read(file)
-                    # 写入到目标目录
-                    target_file = os.path.join(target_dir, filename)
-                    with open(target_file, 'wb') as f:
-                        f.write(content)
-                    print(f"已提取: {filename}")
-        
-        # 删除临时文件
-        os.unlink(temp_path)
-        
-        # 验证文件是否成功提取
-        if os.path.exists(os.path.join(target_dir, 'ffmpeg.exe')):
-            print("FFmpeg下载并解压成功!")
-            return True
-        else:
-            print("FFmpeg提取失败!")
-            return False
+                if file.endswith('ffmpeg.exe'):
+                    ffmpeg_exe_path = file
+                    break
             
+            if ffmpeg_exe_path:
+                # 提取ffmpeg.exe到目标目录
+                source = zip_ref.open(ffmpeg_exe_path)
+                target = open(os.path.join(target_dir, 'ffmpeg.exe'), 'wb')
+                shutil.copyfileobj(source, target)
+                source.close()
+                target.close()
+                
+                if progress_callback:
+                    progress_callback(90, "FFmpeg解压完成")
+                return True
+            else:
+                if progress_callback:
+                    progress_callback(80, "压缩包中未找到ffmpeg.exe")
+                return False
     except Exception as e:
-        print(f"下载FFmpeg时出错: {str(e)}")
-        # 清理临时文件
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
+        if progress_callback:
+            progress_callback(0, f"下载失败: {str(e)}")
+        return False
+    finally:
+        # 删除临时文件
+        if os.path.exists(temp_file.name):
+            os.unlink(temp_file.name)
+
+def setup_ffmpeg_directory(target_dir, progress_callback=None):
+    """设置FFmpeg目录
+    
+    Args:
+        target_dir (str): FFmpeg目录
+        progress_callback (function, optional): 进度回调函数
+    
+    Returns:
+        bool: 设置是否成功
+    """
+    try:
+        # 确保目标目录存在
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir, mode=0o755, exist_ok=True)
+        
+        # 检查ffmpeg.exe是否存在
+        ffmpeg_exe_path = os.path.join(target_dir, 'ffmpeg.exe')
+        if not os.path.exists(ffmpeg_exe_path):
+            if progress_callback:
+                progress_callback(95, "FFmpeg安装失败: 未找到ffmpeg.exe")
+            return False
+        
+        # 更新配置文件
+        try:
+            config = {}
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+            
+            config['ffmpeg_path'] = target_dir
+            
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, ensure_ascii=False, indent=4)
+            
+            # 更新全局变量
+            global ffmpeg_path
+            ffmpeg_path = ffmpeg_exe_path
+            
+            if progress_callback:
+                progress_callback(100, "FFmpeg安装完成")
+            
+            return True
+        except Exception as e:
+            if progress_callback:
+                progress_callback(95, f"更新配置文件失败: {str(e)}")
+            return False
+    except Exception as e:
+        if progress_callback:
+            progress_callback(95, f"设置FFmpeg目录失败: {str(e)}")
         return False
 
+def download_ffmpeg(target_dir=None, progress_callback=None):
+    """下载FFmpeg到指定目录 (兼容旧版本调用)
+    
+    Args:
+        target_dir (str, optional): 下载目标目录。默认为配置文件中指定的目录或app/ffmpeg目录。
+        progress_callback (function, optional): 进度回调函数，接收下载进度百分比和状态消息。
+    
+    Returns:
+        bool: 下载是否成功
+    """
+    # 第一步：获取并测试下载链接
+    valid_urls, url_speeds, fastest_url = get_ffmpeg_download_urls(progress_callback)
+    
+    # 检查是否有有效链接
+    if not valid_urls or not fastest_url:
+        return False
+    
+    # 第二步：下载FFmpeg
+    success = download_ffmpeg_file(fastest_url, target_dir, progress_callback)
+    if not success:
+        # 如果下载失败，尝试使用下一个最快的链接
+        if len(valid_urls) > 1:
+            # 移除失败的链接
+            valid_urls.remove(fastest_url)
+            url_speeds.pop(fastest_url)
+            
+            # 选择下一个最快的链接
+            if url_speeds:
+                next_fastest_url = max(url_speeds.items(), key=lambda x: x[1])[0]
+                if progress_callback:
+                    from urllib.parse import urlparse
+                    domain = urlparse(next_fastest_url).netloc
+                    progress_callback(20, f"尝试使用下一个最快的链接: {domain}")
+                
+                # 再次尝试下载
+                success = download_ffmpeg_file(next_fastest_url, target_dir, progress_callback)
+    
+    # 第三步：设置FFmpeg目录
+    if success:
+        return setup_ffmpeg_directory(target_dir, progress_callback)
+    
+    return False
 
 def toOgg(file_path: str, output_path: str, quality="192k", parameters=None, overwrite=False, sample_rate=None):
     """将任意音频文件转换为ogg格式并保存到指定路径

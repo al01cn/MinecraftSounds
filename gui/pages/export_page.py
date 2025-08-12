@@ -244,6 +244,21 @@ class ExportWorker(QThread):
             sounds_dir = self.project_path.sounds()
             if not os.path.exists(sounds_dir):
                 os.makedirs(sounds_dir, mode=0o755)  # 设置读写权限
+            else:
+                # 清空sounds目录中的所有文件和子目录
+                self.log_message.emit("正在清空sounds目录...")
+                for item in os.listdir(sounds_dir):
+                    item_path = os.path.join(sounds_dir, item)
+                    try:
+                        if os.path.isfile(item_path):
+                            os.unlink(item_path)
+                            self.log_message.emit(f"已删除文件: {item}")
+                        elif os.path.isdir(item_path):
+                            shutil.rmtree(item_path)
+                            self.log_message.emit(f"已删除目录: {item}")
+                    except Exception as e:
+                        self.log_message.emit(f"清空sounds目录时出错: {str(e)}")
+                self.log_message.emit("sounds目录已清空")
             
             # 获取dist目录中的所有ogg文件（包括子目录）
             ogg_files = []

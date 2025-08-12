@@ -17,13 +17,27 @@
 3. 添加音频，系统会自动把添加的音频生成一个对应的soundkey
 4. 导出项目，系统会自动把项目导出为一个资源包和对应的命令
 
-## 开发环境
+## 开发
+
+### 激活虚拟环境Linux
+
+```bash
+source venv/Scripts/activate
+```
+
+### 激活虚拟环境Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 运行应用
+### 运行应用
 
 ```bash
 python main.py
@@ -62,3 +76,9 @@ python build.py
 - 应用需要管理员权限运行
 - 需要安装FFmpeg（应用会自动下载）
 - 打包时确保已安装所有依赖
+
+## 项目依赖
+
+- Python 3.12.2
+- PyQt5
+- FFmpeg

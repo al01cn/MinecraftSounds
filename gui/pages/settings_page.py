@@ -1,10 +1,13 @@
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame, QFileDialog, QLineEdit
 import os
+import sys
+import winreg
+import ctypes
 
 from gui.ui import MinecraftFrame, MinecraftTitleLabel, MinecraftLabel, apply_minecraft_style
 from gui.ui.button import MinecraftPixelButton
-from utils.main import ffmpeg_path, app_path
+from utils.main import ffmpeg_path, app_path, exeSuffixName
 
 class SettingsPage(QWidget):
     """设置页面"""
@@ -78,6 +81,8 @@ class SettingsPage(QWidget):
         """添加设置项"""
         # 添加FFmpeg路径设置
         self.addFFmpegPathSetting()
+        
+        # 文件关联设置已移除，现在在应用启动时自动关联
     
     def addFFmpegPathSetting(self):
         """添加FFmpeg路径设置"""
@@ -134,16 +139,22 @@ class SettingsPage(QWidget):
         resetButton.setMinimumSize(60, 30)
         resetButton.clicked.connect(self.onResetFFmpegPath)
         
+        # 创建帮助按钮
+        helpButton = MinecraftPixelButton("帮助", button_type="blue")
+        helpButton.setMinimumSize(60, 30)
+        helpButton.clicked.connect(self.onFFmpegHelp)
+        
         # 添加组件到路径布局
         pathLayout.addWidget(self.ffmpegPathInput, 1)  # 1表示拉伸因子
         pathLayout.addWidget(browseButton)
         pathLayout.addWidget(resetButton)
+        pathLayout.addWidget(helpButton)
         
         # 添加路径容器到FFmpeg布局
         ffmpegLayout.addWidget(pathContainer)
         
         # 添加说明文本
-        helpText = MinecraftLabel("注意：修改路径后需要重启应用才能生效。默认路径为app/ffmpeg目录。")
+        helpText = MinecraftLabel("注意：修改路径后需要重启应用才能生效。默认路径为app/ffmpeg目录。如果没有检测到FFmpeg，请自行下载并设置路径。")
         helpText.setStyleSheet("color: #AAAAAA; font-size: 9pt;")
         helpText.setWordWrap(True)
         ffmpegLayout.addWidget(helpText)
@@ -224,6 +235,35 @@ class SettingsPage(QWidget):
                 "保存设置失败",
                 f"无法保存FFmpeg路径设置: {str(e)}"
             )
+    
+    def onFFmpegHelp(self):
+        """FFmpeg帮助按钮点击事件"""
+        from gui.ui.minecraft_dialog import MinecraftMessageBox
+        
+        MinecraftMessageBox.show_message(
+            self,
+            "FFmpeg设置帮助",
+            """FFmpeg是一个用于处理音视频的开源软件，本应用需要使用它来处理音频文件。
+
+如果您还没有安装FFmpeg，请按照以下步骤操作：
+1. 访问FFmpeg官方网站 https://ffmpeg.org/download.html 下载适合您系统的版本
+2. 解压下载的文件到您选择的目录
+3. 在本应用的设置页面中，点击"浏览"按钮选择FFmpeg所在的目录
+4. 确保选择的目录中包含ffmpeg.exe文件
+5. 点击"确定"保存设置，然后重启应用
+
+您也可以将FFmpeg添加到系统环境变量中，这样应用将自动检测并使用它。"""
+        )
+    
+    # FFmpeg相关方法已移除
+    
+    # 文件关联设置已移除，现在在应用启动时自动关联
+    
+    # 文件关联相关方法已移除
+    
+    # 文件关联方法已移除，现在在应用启动时自动关联
+    
+    # 取消关联方法已移除，现在在应用启动时自动关联
     
     def onBack(self):
         """返回主页按钮点击事件"""
