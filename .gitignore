@@ -7,7 +7,7 @@ __pycache__/
 logs
 project
 app/projects/*
-
+build/
 
 # C extensions
 *.so
