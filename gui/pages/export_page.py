@@ -408,6 +408,7 @@ class ExportWorker(QThread):
                 if not os.path.exists(dist_path):
                     self.log_message.emit(f"创建输出目录: {dist_path}")
                     from utils import createFolder
+                    import platform
                     try:
                         createFolder(dist_path)
                     except Exception as e:
@@ -834,8 +835,19 @@ class ExportPage(QWidget):
         
         # 使用系统默认文件管理器打开文件夹
         try:
-            # 在Windows上使用explorer打开文件夹
-            subprocess.Popen(["explorer", dist_path])
+            # 根据操作系统选择不同的打开方式
+            system = platform.system().lower()
+            
+            if system == 'windows':
+                # Windows使用explorer
+                os.startfile(dist_path)
+            elif system == 'darwin':
+                # macOS使用open
+                subprocess.run(['open', dist_path])
+            else:
+                # Linux使用xdg-open
+                subprocess.run(['xdg-open', dist_path])
+                
             self.onLogMessage(f"已打开文件夹: {dist_path}")
         except Exception as e:
             MinecraftMessageBox.show_warning(

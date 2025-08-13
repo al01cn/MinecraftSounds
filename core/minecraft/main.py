@@ -40,7 +40,7 @@ class MinecraftSounds:
         if not path.exists(pack.packMcmeta()): # 音频包元数据
             createJsonFile(pack.packMcmeta(), {
                 "pack": {
-                    "pack_format": pack_format, # 游戏版本号, 必须
+                    "pack_format": int(pack_format), # 游戏版本号, 必须
                     "description": description, # 音频包描述, 可选
                     "supported_formats": {
                         "min_inclusive": 1,
