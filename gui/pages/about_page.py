@@ -67,17 +67,17 @@ class AboutPage(QWidget):
         self.aboutLayout.addWidget(self.appNameLabel)
         
         # 创建版本信息
-        self.versionLabel = MinecraftLabel("版本: 1.0.0")
+        self.versionLabel = MinecraftLabel("版本: 0.0.1-beta")
         self.versionLabel.setAlignment(Qt.AlignCenter)
         self.aboutLayout.addWidget(self.versionLabel)
         
         # 创建作者信息
-        self.authorLabel = MinecraftLabel("作者: 零一狼AL01")
+        self.authorLabel = MinecraftLabel("作者: 小阿狼是也 & 零一狼AL01")
         self.authorLabel.setAlignment(Qt.AlignCenter)
         self.aboutLayout.addWidget(self.authorLabel)
         
         # 创建描述信息
-        self.descriptionLabel = MinecraftLabel("这是一个用于创建我的世界音乐包的工具，可以帮助你轻松地将音频文件转换且打包为我的世界可用的音乐包格式。")
+        self.descriptionLabel = MinecraftLabel("简单易用的我的世界音乐包生成器，专为小白制作。提供最简单的可视化界面，支持最新的游戏版本。")
         self.descriptionLabel.setAlignment(Qt.AlignCenter)
         self.descriptionLabel.setWordWrap(True)
         self.aboutLayout.addWidget(self.descriptionLabel)
