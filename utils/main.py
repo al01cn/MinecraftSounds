@@ -54,7 +54,7 @@ ffmpeg_path = get_ffmpeg_path() # ffmpeg.exe文件路径
 history_path = os.path.join(app_path, 'history.json') # 历史项目记录文件路径
 
 mcver_path = os.path.join(app_path, 'mc.ver') #  minecraft版本文件路径
-logo_path = os.path.join(assets_path, 'logo.png') # 应用图标文件路径
+logo_path = os.path.join(assets_path, 'note_block.png') # 应用图标文件路径
 defaultIcon_path = os.path.join(assets_path, 'default_pack.png') # 默认图标文件路径
 
 

@@ -54,7 +54,10 @@ class AboutPage(QWidget):
         # 创建logo
         self.logoLabel = QLabel()
         logo_path = GetLogoIcon(False)
-        self.logoLabel.setPixmap(QPixmap(logo_path))
+        pixmap = QPixmap(logo_path)
+        # 缩小图片尺寸到100x100
+        pixmap = pixmap.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logoLabel.setPixmap(pixmap)
         self.logoLabel.setAlignment(Qt.AlignCenter)
         self.aboutLayout.addWidget(self.logoLabel)
         
@@ -101,7 +104,7 @@ class AboutPage(QWidget):
     def onGithub(self):
         """访问GitHub按钮点击事件"""
         # 这里可以替换为实际的GitHub仓库地址
-        QDesktopServices.openUrl(QUrl("https://github.com/al01_cn/minecraft-sounds"))
+        QDesktopServices.openUrl(QUrl("https://github.com/al01cn/MinecraftSounds"))
 
     def onGitee(self):
         """访问Gitee按钮点击事件"""

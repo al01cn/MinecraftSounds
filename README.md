@@ -82,3 +82,13 @@ python build.py
 - Python 3.12.2
 - PyQt5
 - FFmpeg
+
+## 开源仓库
+
+- [Github](https://github.com/al01cn/MinecraftSounds)
+- [Gitee](https://gitee.com/al01/MinecraftSounds)
+
+## 贡献
+
+- 欢迎提交Pull Request改进项目
+- 提交问题或建议时，请提供详细信息

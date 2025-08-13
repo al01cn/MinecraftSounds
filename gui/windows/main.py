@@ -32,6 +32,33 @@ class App(QWidget):
         self.mainPage = QWidget()
         self.createMainPage()
         
+        # 创建主布局
+        self.mainLayout = QVBoxLayout(self)
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.setSpacing(0)
+        self.mainLayout.addWidget(self.stackedWidget)
+        
+        # 将主页面添加到堆叠小部件
+        self.stackedWidget.addWidget(self.mainPage)  # 索引0 - 主页面
+        
+        # 默认显示主页面
+        self.stackedWidget.setCurrentIndex(0)
+        
+        # 当前项目路径
+        self.current_project_path = None
+        
+        # 标记其他页面是否已初始化
+        self._editor_page_initialized = False
+        self._export_page_initialized = False
+        self._settings_page_initialized = False
+        self._about_page_initialized = False
+        
+        # 使用QTimer延迟初始化其他页面
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(100, self._init_other_pages)  # 100毫秒后初始化其他页面
+    
+    def _init_other_pages(self):
+        """延迟初始化其他页面"""
         # 创建编辑器页面
         self.editorPage = EditorPage(self)
         # 连接编辑器页面的返回主页信号
@@ -55,23 +82,16 @@ class App(QWidget):
         self.aboutPage.backToMainPage.connect(self.backToMainPage)
         
         # 将页面添加到堆叠小部件
-        self.stackedWidget.addWidget(self.mainPage)  # 索引0 - 主页面
         self.stackedWidget.addWidget(self.editorPage)  # 索引1 - 编辑器页面
         self.stackedWidget.addWidget(self.exportPage)  # 索引2 - 导出页面
         self.stackedWidget.addWidget(self.settingsPage)  # 索引3 - 设置页面
         self.stackedWidget.addWidget(self.aboutPage)  # 索引4 - 关于页面
         
-        # 创建主布局
-        self.mainLayout = QVBoxLayout(self)
-        self.mainLayout.setContentsMargins(0, 0, 0, 0)
-        self.mainLayout.setSpacing(0)
-        self.mainLayout.addWidget(self.stackedWidget)
-        
-        # 默认显示主页面
-        self.stackedWidget.setCurrentIndex(0)
-        
-        # 当前项目路径
-        self.current_project_path = None
+        # 标记所有页面已初始化
+        self._editor_page_initialized = True
+        self._export_page_initialized = True
+        self._settings_page_initialized = True
+        self._about_page_initialized = True
     
     def createMainPage(self):
         """创建主页面"""
@@ -171,8 +191,13 @@ class App(QWidget):
         
         # 创建logo
         self.logoLabel = QLabel()
+        self.logoLabel.setAttribute(Qt.WA_TranslucentBackground)
+        self.logoLabel.setStyleSheet("background-color: transparent;")
         logo_path = GetLogoIcon(False)
-        self.logoLabel.setPixmap(QPixmap(logo_path))
+        pixmap = QPixmap(logo_path)
+        # 缩小图片尺寸到200x200
+        pixmap = pixmap.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.logoLabel.setPixmap(pixmap)
         self.logoLabel.setAlignment(Qt.AlignCenter)
         
         # 添加logo到主页面布局
@@ -421,6 +446,13 @@ class App(QWidget):
             # 保存到历史记录
             saveProjectHistory(self.current_project_path.project_name)
             
+            # 确保编辑器页面已初始化
+            if not hasattr(self, '_editor_page_initialized') or not self._editor_page_initialized:
+                # 如果编辑器页面尚未初始化，等待初始化完成后再打开项目
+                from PyQt5.QtCore import QTimer
+                QTimer.singleShot(100, lambda: self._delayed_open_project(self.current_project_path.project_name))
+                return
+            
             # 加载项目到编辑器页面
             self.editorPage.loadProject(self.current_project_path.project_name)
             
@@ -436,6 +468,23 @@ class App(QWidget):
                 "打开项目失败",
                 f"错误信息: {str(e)}"
             )
+    
+    def _delayed_open_project(self, project_name):
+        """延迟打开项目，等待编辑器页面初始化完成"""
+        if not hasattr(self, '_editor_page_initialized') or not self._editor_page_initialized:
+            # 如果编辑器页面仍未初始化，继续等待
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(100, lambda: self._delayed_open_project(project_name))
+            return
+        
+        # 加载项目到编辑器页面
+        self.editorPage.loadProject(project_name)
+        
+        # 切换到编辑器页面
+        self.stackedWidget.setCurrentIndex(1)
+        
+        # 设置窗口标题
+        self.setWindowTitle(self.editorPage.title_text)
         
     def onFFmpegDownloaded(self, success):
         """FFmpeg下载完成回调"""
@@ -464,6 +513,13 @@ class App(QWidget):
     
     def onSettings(self):
         """设置按钮点击事件"""
+        # 确保设置页面已初始化
+        if not hasattr(self, '_settings_page_initialized') or not self._settings_page_initialized:
+            # 如果页面尚未初始化，显示加载提示并等待初始化完成
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(50, self.onSettings)  # 50毫秒后重试
+            return
+            
         # 切换到设置页面
         self.stackedWidget.setCurrentIndex(3)
         # 设置窗口标题
@@ -471,6 +527,13 @@ class App(QWidget):
     
     def onAbout(self):
         """关于按钮点击事件"""
+        # 确保关于页面已初始化
+        if not hasattr(self, '_about_page_initialized') or not self._about_page_initialized:
+            # 如果页面尚未初始化，显示加载提示并等待初始化完成
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(50, self.onAbout)  # 50毫秒后重试
+            return
+            
         # 切换到关于页面
         self.stackedWidget.setCurrentIndex(4)
         # 设置窗口标题
