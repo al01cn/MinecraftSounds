@@ -1,0 +1,34 @@
+---
+# https://vitepress.dev/reference/default-theme-home-page
+layout: home
+
+hero:
+  name: "MinecraftSounds"
+  text: "我的世界音乐包生成器"
+  tagline: 简单易用的我的世界音乐包生成器，专为小白制作。提供最简单的可视化界面，支持最新的游戏版本。
+  image:
+    src: /note_block.png
+    alt: MinecraftSounds
+  actions:
+    - theme: brand
+      text: 快速开始
+      link: /guide/getting-started
+    - theme: alt
+      text: 下载软件
+      link: /download
+
+features:
+  - icon: 🎵
+    title: 简单易用
+    details: 无需编程知识，通过简单的可视化界面即可创建专业的我的世界音乐包
+  - icon: 🎮
+    title: 兼容性强
+    details: 支持最新版本的我的世界，同时兼容旧版本，让你的音乐包适用于各种游戏版本
+  - icon: 📦
+    title: 标准化管理
+    details: 提供项目管理功能，轻松组织和维护多个音乐包项目
+  - icon: 🚀
+    title: 一键导出
+    details: 一键导出为标准格式，可直接用于游戏或分享给其他玩家
+---
+

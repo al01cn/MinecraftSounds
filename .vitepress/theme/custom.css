@@ -1,0 +1,28 @@
+/* 自定义样式 */
+
+/* 去掉超链接下划线 */
+a {
+  text-decoration: none !important;
+}
+
+/* 主页图标放大和发光效果 */
+.VPHomeHero .image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.VPHomeHero .image-src {
+  transform: scale(0.8); /* 缩小到0.9倍 */
+  filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.8)); /* 金色发光效果 */
+  transition: all 0.5s ease;
+  position: relative;
+  left: 0;
+  top: 0; /* 向上移动300px */
+}
+
+/* 鼠标悬停时添加动画效果 */
+.VPHomeHero .image-src:hover {
+  transform: scale(1.0); /* 悬停时恢复原始大小 */
+  filter: drop-shadow(0 0 55px rgba(255, 215, 0, 1)); /* 增强发光效果 */
+}
