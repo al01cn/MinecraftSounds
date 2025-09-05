@@ -1,5 +1,7 @@
 {
-  "dependencies": {},
+  "dependencies": {
+    "@vercel/speed-insights": "^1.2.0"
+  },
   "devDependencies": {
     "vitepress": "^1.6.4"
   },
