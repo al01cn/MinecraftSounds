@@ -1,4 +1,9 @@
 import { defineConfig } from 'vitepress'
+import { inject } from "@vercel/analytics"
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+injectSpeedInsights();
+inject()
 
 let title = 'MinecraftSounds - 我的世界音乐包生成器'
 let description = '简单易用的我的世界音乐包生成器，专为小白制作。提供最简单的可视化界面，支持最新版本的游戏。标准化的项目管理。'
