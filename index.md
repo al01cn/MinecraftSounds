@@ -7,7 +7,7 @@ hero:
   text: "我的世界音乐包生成器"
   tagline: 简单易用的我的世界音乐包生成器，专为小白制作。提供最简单的可视化界面，支持最新的游戏版本。
   image:
-    src: img/note_block.png
+    src: note_block.png
     alt: MinecraftSounds
   actions:
     - theme: brand
