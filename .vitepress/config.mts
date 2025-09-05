@@ -96,6 +96,7 @@ export default defineConfig({
     ['meta', { name: 'twitter:site', content: '@alwolf_cn' }],
     ['meta', { name: 'twitter:creator', content: '@alwolf_cn' }],
     ['meta', { name: 'twitter:domain', content: 'https://mcsd.al01.cn/' }],
+    ['meta', { name: 'google-adsense-account', content: 'ca-pub-9092291426352834' }],
     ['script', { async: 'true', src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9092291426352834', crossorigin: 'anonymous' }],
   ],
   themeConfig: {
