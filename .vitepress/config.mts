@@ -107,12 +107,12 @@ export default defineConfig({
       { icon: 'gitee', link: 'https://gitee.com/al01/minecraft-sounds' },
       { icon: 'github', link: 'https://github.com/al01cn/MinecraftSounds' }
     ],
-    
+
     footer: {
       message: '软件和站点基于 GPL-2.0 许可发布<br><a href="https://beian.miit.gov.cn" target="_blank"> 粤ICP备2025454179号 </a>',
       copyright: 'Copyright © 2025 <a href="https://space.bilibili.com/415963320" target="_blank">小阿狼是也</a> & <a href="https://al01.cn" target="_blank">零一狼AL01</a>',
     },
-    
+
     // 修改 localeLinks 为正确的属性名称
     locales: {
       root: {
@@ -124,5 +124,29 @@ export default defineConfig({
         link: '/en/'
       }
     }
-  }
+  },
+  vite: {
+    ssr: {
+      noExternal: ['pinia','pinia-plugin-persistedstate','ant-design-vue','@ant-design/icons-vue', 'vue'] // 将有问题的库名放入数组
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // 手动分包策略
+        manualChunks: (id: any) => {
+          if (id.includes('node_modules')) {
+            // 将 node_modules 中的依赖拆分为单独的 'vendor' chunk
+            return 'vendor';
+          }
+          // 还可以根据路径进一步拆分其他模块
+          // if (id.includes('your-large-module')) {
+          //   return 'large-module';
+          // }
+        },
+      },
+    },
+    // 你仍然可以同时调整警告限制
+    chunkSizeWarningLimit: 800,
+  },
 })

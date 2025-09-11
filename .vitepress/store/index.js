@@ -37,11 +37,26 @@ export const mainStore = defineStore("main", {
   },
   persist: {
     key: "data",
-    storage: window.localStorage,
+    storage: {
+      getItem: (key) => {
+        // 只在客户端环境下使用 localStorage
+        if (typeof window !== 'undefined') {
+          return window.localStorage.getItem(key);
+        }
+        return null;
+      },
+      setItem: (key, value) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      removeItem: (key) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(key);
+        }
+      },
+    },
     paths: [
-      "coverType",
-      "siteStartShow",
-      "footerBlur",
       "isLoggedIn",
       "userInfo",
       "token",

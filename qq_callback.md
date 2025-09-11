@@ -12,7 +12,7 @@ description: QQ登录
 </Result>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Result } from 'ant-design-vue'
 import { LoadingOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons-vue'
 import { mainStore } from ".vitepress/store";
@@ -28,8 +28,8 @@ const store = mainStore()
 async function qqCallback() {
     const store = mainStore();
 
-    if (window.location.pathname === '/qq_callback') {
-        const code = new URLSearchParams(window.location.search).get('code');
+    if (location.pathname === '/qq_callback') {
+        const code = new URLSearchParams(location.search).get('code');
         // 发送code到后端
         try {
             const res = await fetch('https://auth.al01.cn/qq_callback?code=' + code, {
@@ -41,7 +41,7 @@ async function qqCallback() {
                 toggleState(2, error.error)
                 // 登录失败后重定向到首页
                 setTimeout(() => {
-                    window.location.href = '/';
+                    location.href = '/';
                 }, 2000);
                 return;
             }
@@ -55,14 +55,14 @@ async function qqCallback() {
 
             // 登录成功后重定向到首页
             setTimeout(() => {
-                window.location.href = '/';
+                location.href = '/';
             }, 1500);
         } catch (error) {
             console.error('QQ登录处理错误:', error);
             toggleState(2, "登录处理出错，请稍后重试")
             // 出错后重定向到首页
             setTimeout(() => {
-                window.location.href = '/';
+                location.href = '/';
             }, 2000);
         }
     }
@@ -80,7 +80,7 @@ function toggleState(state, msg) {
         loaded.value = 2
     }
 }
-
-qqCallback();
-console.log('qq_callback')
+onMounted( async () => {
+    await qqCallback();
+});
 </script>

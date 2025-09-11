@@ -1,6 +1,8 @@
 <template>
   <div class="navbar-login">
-    <LoginButton />
+    <ClientOnly>
+      <LoginButton />
+    </ClientOnly>
   </div>
 </template>
 
