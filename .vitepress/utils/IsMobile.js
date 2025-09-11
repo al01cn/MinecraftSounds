@@ -1,5 +1,5 @@
 const mobileAgent = ["iphone", "ipod", "ipad", "android", "mobile", "blackberry", "webos", "incognito", "webmate", "bada", "nokia", "lg", "ucweb", "skyfire"];
-const browser = navigator.userAgent.toLowerCase();
+const browser = typeof window !== 'undefined' ? window.navigator.userAgent.toLowerCase() : navigator.userAgent.toLowerCase();
 let isMobile = false;
 for (let i=0; i<mobileAgent.length; i++)
 {
