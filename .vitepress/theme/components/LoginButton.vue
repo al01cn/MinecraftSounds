@@ -1,6 +1,6 @@
 <template>
   <div class="login-container">
-    <button @click="handleUserClick" class="login-button">{{ store.isLoggedIn ? (store.userInfo?.username || '注销') :
+    <button @click="handleUserClick" class="login-button">{{ store.isLoggedIn ? (store.userInfo?.username?.substring(0, 10) || '注销') :
       '登录' }}</button>
 
     <!-- 登录弹窗 -->
