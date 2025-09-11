@@ -13,16 +13,69 @@ a {
 }
 
 .VPHomeHero .image-src {
-  transform: scale(0.8); /* 缩小到0.9倍 */
-  filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.8)); /* 金色发光效果 */
+  transform: scale(0.8);
+  /* 缩小到0.9倍 */
+  filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.8));
+  /* 金色发光效果 */
   transition: all 0.5s ease;
   position: relative;
   left: 0;
-  top: 0; /* 向上移动300px */
+  top: 0;
+  /* 向上移动300px */
 }
 
 /* 鼠标悬停时添加动画效果 */
 .VPHomeHero .image-src:hover {
-  transform: scale(1.0); /* 悬停时恢复原始大小 */
-  filter: drop-shadow(0 0 55px rgba(255, 215, 0, 1)); /* 增强发光效果 */
+  transform: scale(1.0);
+  /* 悬停时恢复原始大小 */
+  filter: drop-shadow(0 0 55px rgba(255, 215, 0, 1));
+  /* 增强发光效果 */
+}
+
+.ant-message .ant-message-notice .ant-message-notice-content {
+  margin-top: 50px;
+  background-color: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+}
+
+.ant-result .ant-result-title {
+  color: var(--vp-c-text-1);
+}
+
+:where(.css-dev-only-do-not-override-1p3hq3p).ant-btn-default {
+  background-color: var(--vp-button-alt-bg);
+  color: var(--vp-c-text-1);
+  border: none;
+}
+
+:where(.css-dev-only-do-not-override-1p3hq3p).ant-btn-default:not(:disabled):hover {
+    border-color: var(--vp-button-alt-hover-border);
+    color: var(--vp-button-alt-hover-text);
+    background-color: var(--vp-button-alt-hover-bg)
+}
+
+:where(.css-dev-only-do-not-override-1p3hq3p).ant-modal .ant-modal-content {
+  background-color: var(--vp-c-bg) !important;
+}
+
+:where(.css-dev-only-do-not-override-1p3hq3p).ant-modal-confirm .ant-modal-confirm-body .ant-modal-confirm-title {
+  color: var(--vp-c-text-1);
+}
+
+:where(.css-dev-only-do-not-override-1p3hq3p).ant-modal-confirm .ant-modal-confirm-body .ant-modal-confirm-content {
+  color: var(--vp-c-text-1);
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite !important;
 }

@@ -1,7 +1,11 @@
 {
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
     "@vercel/analytics": "^1.5.0",
-    "@vercel/speed-insights": "^1.2.0"
+    "@vercel/speed-insights": "^1.2.0",
+    "ant-design-vue": "4.x",
+    "pinia": "^3.0.3",
+    "pinia-plugin-persistedstate": "^4.5.0"
   },
   "devDependencies": {
     "vitepress": "^1.6.4"
