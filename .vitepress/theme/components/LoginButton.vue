@@ -47,7 +47,7 @@
 import { ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { mainStore } from '../../store'
-import IsMobile from '../../utils/IsMobile'
+import checkIsMobile from '../../utils/IsMobile'
 
 const store = mainStore();
 
@@ -118,7 +118,7 @@ const thirdPartyLogin = (platform) => {
   switch (platform.toLowerCase()) {
     case 'qq':
       const qqRedirectUri = encodeURIComponent('https://mcsd.al01.cn/qq_callback');
-      const qqAuthUrl = `https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=102799975&redirect_uri=${qqRedirectUri}&display=${IsMobile ? 'mobile' : 'pc'}`;
+      const qqAuthUrl = `https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=102799975&redirect_uri=${qqRedirectUri}&display=${checkIsMobile() ? 'mobile' : 'pc'}`;
       delayRedirect(qqAuthUrl);
       break;
     default:
